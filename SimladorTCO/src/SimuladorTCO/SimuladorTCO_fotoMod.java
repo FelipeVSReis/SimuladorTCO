@@ -36,7 +36,7 @@ public class SimuladorTCO_fotoMod{
     //double FatorMultiplicador=10;
     double vel=20; //(Km/h)
     double PorcentagemCom=0.8; // porcentagem usuarios comercias
-    int SR=32;   //splitting ratio(16,32 ou 64)
+    int SR=16;   //splitting ratio(16,32 ou 64)
     int NPC=72;  //numero de portas olt por chassi botar 72
    //subtituir e arqpad esqprot
    //seletores
@@ -108,138 +108,269 @@ public class SimuladorTCO_fotoMod{
             clientemat=0;
         }
     }
-    //SELETORES
-    int suboltspl=0;
-    if(selCO>0){
-        numspq=(int) Math.ceil((double) Math.pow(n,2)/SR);
-        numEq[14]=((int) (Math.pow(N,2)*numspq));
-        numEq[5]=(int) Math.ceil((double) ((int) (Math.pow(N,2)*numspq))/NPC);
-        if(selCO==2){
-            if(numEq[5]%2==0){
-                suboltspl=(int) ((Math.ceil(((numEq[14]*1.0)/NPC))*NPC)-numEq[14]);
-                //System.out.println("entrou no 1" + suboltspl);
-            }
-            else if(numEq[5]%2!=0){
-                suboltspl=numEq[14]-((numEq[5]-1)*NPC);
-            }
-            numEq[16]=numEq[14]-suboltspl;
-            numEq[17]=numEq[14];
-        }
-    }
-    if(selENA>0){
-    numEq[4]=(int) ((N*(N+1)));
-        if(selENA==2){
-            numspq=(int) Math.ceil((double) Math.pow(n,2)/SR);
-            numEq[6]=((int) (Math.pow(N,2)*numspq));
-            numEq[7]=(N-1)*N;
-        }
-    }
-    if(selRN>0){
-        numEq[3]=(int) Math.pow(N,2);
-        numspq=(int) Math.ceil((double) Math.pow(n,2)/SR);
-        numEq[2]=((int) (Math.pow(N,2)*numspq));
-        if(selEND==2){ 
-            //por enquanto o mesmo
-            numEq[3]=(int) Math.pow(N,2);
-            numspq=(int) Math.ceil((double) Math.pow(n,2)/SR);
-            numEq[2]=((int) (Math.pow(N,2)*numspq));
-        }
-    }
-    if(selEND>0){
-    numEq[1]=(int) ((n*(n+1))*Math.pow(N,2));
-        if(selEND==2){
-            numEq[8]=n*n*N*N;
-            numEq[9]=(n-1)*n*N*N;
-        }
-    }
-    if(selRES>0){
-        numEq[0]=(int) (Math.pow(n,2)*Math.pow(N,2));
-        if(selRES==2){
-            //Por Equato o mesmo
-            numEq[0]=(int) (Math.pow(n,2)*Math.pow(N,2));
-        }
-    }
-    CenarioMWCli=new int[2][2];
-    CenarioMWPEB=new int[2][2];
-    if(TypeMW==3){
-        CenarioMWCli=MatrizEstBase(areacobertura[1], 0);
-        CenarioMWPEB=MatrizEstBase(areacobertura[1], 1);
-        numEq[12]=CenarioMWPEB.length;
-        numEq[13]=(int) Math.ceil((numEq[12]/16.0));
-        numEq[15]=1;
-    
-    }
-    System.out.println("Observavel"+CenarioMWPEB.length);
-    System.out.println(CenarioMWPEB[0].length);
-    int [] vetorDeImpressao = new int[CenarioMWPEB[0].length];
-    for (int i=0; i<CenarioMWPEB.length;i++){
-        for (int j=0; j<CenarioMWPEB[0].length; j++){
-            vetorDeImpressao[j] = CenarioMWPEB [i][j];
-        }
-        System.out.println(Arrays.toString(vetorDeImpressao));
-    }
+    //Calculo de uso dos equipamentos
+    int [][] Resposta = Hexagono (areacobertura[1]);
+    numEq[0] = Resposta.length;
+    numEq[1] = Resposta.length;
+    numEq[2] = Resposta.length;
+    numEq[3] = Resposta.length;
+    numEq[4] = Resposta[Resposta.length-1][2];
+    numEq[5] = Resposta[Resposta.length-1][2];
+    numEq[6] = Resposta[Resposta.length-1][2];
+    numEq[7] = (int)Math.ceil(numEq[6]/NPC);
+    numEq[8] = 1;//num de inversores temporarias
+    numEq[9] = 1;//num de placas temporarias
+            
+    //Calculo do num total de equipamentos
     int numtoteq=0;
     for(int i=0;i<18;i++){
         numtoteq=numtoteq+numEq[i];
     }
-    int NumeroOLTPextra=(int) ((Math.ceil(((numEq[2]*1.0)/NPC))*NPC)-numEq[2]);
-    int NumeroOLTPextra2=numEq[2]-((numEq[5]-1)*NPC);
-    if(((numEq[5]%2==0)&&((numEq[2]/NPC) %2!=0))&&selCO==2){
-        numtoteq=numtoteq+NumeroOLTPextra;
-    }
-    if((numEq[5]%2!=0)&&selCO==2){
-        numtoteq=numtoteq+1+NumeroOLTPextra2;
-    }
-    //System.out.println("{onu,dstep,spt,rn,fstep,oltc,fswt,pfstep,dswt,pdstep,GES,Micro,Pico,Ant,oltp,macro, olt splitter, olt splitter switch}");
-    //System.out.println(Arrays.toString(numEq));
-    //System.out.println("numeroeq" + numtoteq);
-    // Modelo Geometrico 
-    //criando vetor eqipamentos
-    
-    
     Equipamento [] Equi = new Equipamento[numtoteq];
     for(int i=0;i<numtoteq;i++){
         Equi[i] = new Equipamento();
     }
     int parpas=0;
-    // Arquitetura Principal
-    //Num Eq
-    /*
-    Onu-0
-    FDS-1
-    Splitters-2
-    Olt ports-3
-    Rn_Chassi-4
-    FFS-5
-    Olt_Chassi-6
-    Olt_Switch-7
-    PFFS-8
-    Olt_Switch-9
-    PDFS-10
-    GES-11
-    Macro-12
-    Antena_Macro-13
-    Micro-14
-    Pico-15
-    */
-    //numero médio de falhas
-    int NumEqNP=numEq[0]+numEq[1]+numEq[2]+numEq[2]+numEq[3]+numEq[4]+numEq[5];
-    //System.out.println(NumEqNP);
-    int Nummedclifal=(int) Math.ceil(((N*N*n*n*(14+n+N))/(2.0*NumEqNP)));
-    System.out.println("med"+Nummedclifal);
+    //Sem clientes e proteção, cenario 10x10 e distancia 1/24
+    //Atualizar valores de numEq para cada equipamento
+    //det distancias
+    double [][] respostaSPL = new double [Resposta.length][2];
+    int pc = (N*n-1)/2;
+    int auxAtual = 1;
+    double [] auxResposta = new double [Resposta[Resposta.length-1][2]];
+    int [][] posSPL = new int [Resposta[Resposta.length-1][2]][2];
+    
+    for (int i=0;i<Resposta.length;i++){
+        respostaSPL[i][1] = Resposta[i][2];
+        respostaSPL[i][2] = Math.sqrt((Resposta[i][0]-pc)*(Resposta[i][0]-pc)
+                +(Resposta[i][1]-pc)*(Resposta[i][1]-pc));
+    }
+    for (int i=0;i<auxResposta.length;i++){
+        auxResposta[i] = Integer.MAX_VALUE;
+    }
+    for(int i=0;i<respostaSPL.length;i++){
+        if(auxAtual != respostaSPL[i][1]){
+            auxAtual++;
+        }
+        if(respostaSPL[i][0]<auxResposta[auxAtual-1]){
+            posSPL[auxAtual-1][0] = Resposta[i][0];
+            posSPL[auxAtual-1][1] = Resposta[i][1];
+            auxResposta[auxAtual-1]=respostaSPL[i][0];
+        }
+    }
+    auxAtual=1;
+    double [] DisestB= new double[Resposta.length];
+    double [] DisestBali= new double[Resposta.length];
+    double [] DisestBdist= new double[Resposta.length];
+    double [] DisSPL= new double[Resposta[Resposta.length-1][2]];
+    for (int i=0;i<Resposta.length;i++){
+        if(auxAtual != respostaSPL[i][1]){
+            auxAtual++;
+        }
+        DisestBdist[i]=Math.sqrt(Math.pow((Resposta[i][0]-posSPL[auxAtual-1][0]),2)+Math.pow((Resposta[i][1]-posSPL[auxAtual-1][1]),2));
+        DisestBali[i]=Math.sqrt(Math.pow(posSPL[auxAtual-1][0]-pc,2)+Math.pow(posSPL[auxAtual-1][1]-pc,2));
+        DisestB[i]=DisestBdist[i]+DisestBali[i];
+    }
     //Pico
-    if(numEq[12]>0){
-        for(int i=0;i<numEq[12];i++){
-            Equi[parpas].distancia=1;
-            Equi[parpas].protecao[0]=7;
-            Equi[parpas].protecao[1]=i;
-            Equi[parpas].protecao[2]=i;
+    if(numEq[0]>0){
+        for(int i=0;i<numEq[0];i++){
+            Equi[parpas].distancia= DisestB[i];
+            System.out.println(Equi[parpas].distancia);
+            Equi[parpas].taxadefalha=taxas_de_falha[0]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[0];
+            Equi[parpas].instalacao=tempo_de_inst[0];
+            Equi[parpas].custoeq=preco[0];
+            Equi[parpas].ConsumoEnergia=KWh[0];
+            Equi[parpas].tipo=1;
+            parpas++;
+        }
+    }
+    //ONU
+    if(numEq[1]>0){
+        for(int i=0;i<numEq[1];i++){
+            Equi[parpas].distancia= DisestB[i];
+            Equi[parpas].taxadefalha=taxas_de_falha[1]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[1];
+            Equi[parpas].instalacao=tempo_de_inst[1];
+            Equi[parpas].custoeq=preco[1];
+            Equi[parpas].ConsumoEnergia=KWh[1];
+            Equi[parpas].tipo=2;
+            parpas++;
+        }
+    }
+    //PN ONU
+    if(numEq[2]>0){
+        for(int i=0;i<numEq[2];i++){
+            Equi[parpas].distancia= DisestB[i];
+            Equi[parpas].taxadefalha=taxas_de_falha[2]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[2];
+            Equi[parpas].instalacao=tempo_de_inst[2];
+            Equi[parpas].custoeq=preco[2];
+            Equi[parpas].ConsumoEnergia=KWh[2];
+            Equi[parpas].tipo=3;
+            parpas++;
+        }
+    }
+    //InV ONU
+    if(numEq[3]>0){
+        for(int i=0;i<numEq[3];i++){
+            Equi[parpas].distancia=DisestB[i];
+            Equi[parpas].taxadefalha=taxas_de_falha[3]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[3];
+            Equi[parpas].instalacao=tempo_de_inst[3];
+            Equi[parpas].custoeq=preco[3];
+            Equi[parpas].ConsumoEnergia=KWh[3];
+            Equi[parpas].tipo=4;
+            parpas++;
+        }
+    }
+    //Distribuition Fiber Step
+    auxAtual=1;
+    double medclusters= 0;
+    for (int i=0;i<Resposta.length;i++){
+        medclusters=medclusters+DisestB[i];
+    }
+    int medEstB = Resposta.length/Resposta[Resposta.length-1][2];
+    double dH = 3*areacobertura[1];
+    double dV = Math.sqrt(3)*areacobertura[1];
+    double sqrtMedEstB = Math.sqrt(medEstB);
+    double auxDiv = (medEstB - sqrtMedEstB) + sqrtMedEstB -1;
+    double raioM = ((medEstB - sqrtMedEstB)*dH + (sqrtMedEstB-1)*dV)/auxDiv;
+    
+    medclusters=medclusters/numEq[0];
+    
+    if(numEq[4]>0){
+        for(int i=0;i<numEq[4];i++){
+            Equi[parpas].distancia=medclusters;
+            Equi[parpas].taxadefalha=raioM*areacobertura[1]*taxas_de_falha[4]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[4];
+            Equi[parpas].instalacao=tempo_de_inst[4];
+            Equi[parpas].custoeq=preco[4];
+            Equi[parpas].ConsumoEnergia=KWh[4];
+            Equi[parpas].tipo=5;
+            parpas++;
+        }
+    }
+    //SPL
+    if(numEq[5]>0){
+        for(int i=0;i<numEq[5];i++){
+            Equi[parpas].distancia=Math.sqrt((respostaSPL[i][0]-pc)*(respostaSPL[i][0]-pc)
+                +(respostaSPL[i][1]-pc)*(respostaSPL[i][1]-pc));
+            Equi[parpas].taxadefalha=taxas_de_falha[5]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[5];
+            Equi[parpas].instalacao=tempo_de_inst[5];
+            Equi[parpas].custoeq=preco[5];
+            Equi[parpas].ConsumoEnergia=KWh[5];
+            Equi[parpas].tipo=6;
+            parpas++;
+        }
+    }
+    //RN chassi
+    if(numEq[6]>0){
+        for(int i=0;i<numEq[6];i++){
+            Equi[parpas].distancia=Math.sqrt((respostaSPL[i][0]-pc)*(respostaSPL[i][0]-pc)
+                +(respostaSPL[i][1]-pc)*(respostaSPL[i][1]-pc));
+            Equi[parpas].taxadefalha=taxas_de_falha[6]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[6];
+            Equi[parpas].instalacao=tempo_de_inst[6];
+            Equi[parpas].custoeq=preco[6];
+            Equi[parpas].ConsumoEnergia=KWh[6];
+            Equi[parpas].tipo=7;
+            parpas++;
+        }
+    }
+    //Feeder Fiber Step
+    medEstB = Resposta[Resposta.length-1][2];
+    
+    switch (SR){
+            case 16:
+                dH = 10.5/2;
+                dV = 7 * Math.sqrt(3)/4;
+                break;
+            case 32:
+                dH = 10.5/2;
+                dV = 7 * Math.sqrt(3)/2;
+                break;
+            case 64:
+                dH = 10.5;
+                dV = 7 * Math.sqrt(3)/2;
+                break;
+            default:
+                break;
+    }
+    
+    sqrtMedEstB = Math.sqrt(medEstB);
+    auxDiv = (medEstB - sqrtMedEstB) + sqrtMedEstB -1;
+    raioM = ((medEstB - sqrtMedEstB)*dH + (sqrtMedEstB-1)*dV)/auxDiv;
+    medclusters = 0;
+    
+    for (int i=0; i<numEq[5]; i++){
+        medclusters +=Math.sqrt((respostaSPL[i][0]-pc)*(respostaSPL[i][0]-pc)
+                +(respostaSPL[i][1]-pc)*(respostaSPL[i][1]-pc)); 
+    }
+    medclusters = medclusters/numEq[5];
+    
+    if(numEq[7]>0){
+        for(int i=0;i<numEq[7];i++){
+            Equi[parpas].distancia=medclusters;
+            Equi[parpas].taxadefalha=raioM*areacobertura[1]*taxas_de_falha[7]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[7];
+            Equi[parpas].instalacao=tempo_de_inst[7];
+            Equi[parpas].custoeq=preco[7];
+            Equi[parpas].ConsumoEnergia=KWh[7];
+            Equi[parpas].tipo=8;
+            parpas++;
+        }
+    
+    //OLT atualizar os valores
+    if(numEq[8]>0){
+        for(int i=0;i<numEq[8];i++){
+            Equi[parpas].distancia=0;
+            Equi[parpas].taxadefalha=taxas_de_falha[8]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[8];
+            Equi[parpas].instalacao=tempo_de_inst[8];
+            Equi[parpas].custoeq=preco[8];
+            Equi[parpas].ConsumoEnergia=KWh[8];
+            Equi[parpas].tipo=9;
+            parpas++;
+        }
+    }
+    //OLT chassi
+    if(numEq[9]>0){
+        for(int i=0;i<numEq[9];i++){
+            Equi[parpas].distancia=0;
             Equi[parpas].taxadefalha=taxas_de_falha[9]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[9];
             Equi[parpas].instalacao=tempo_de_inst[9];
             Equi[parpas].custoeq=preco[9];
-            Equi[parpas].ConsumoEnergia=KWh[9];
-            Equi[parpas].tipo=15;
+            Equi[parpas].ConsumoEnergia=KWh[89];
+            Equi[parpas].tipo=10;
+            parpas++;
+        }
+    }
+    //PN OLT
+    if(numEq[10]>0){
+        for(int i=0;i<numEq[10];i++){
+            Equi[parpas].distancia=0;
+            Equi[parpas].taxadefalha=taxas_de_falha[10]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[10];
+            Equi[parpas].instalacao=tempo_de_inst[10];
+            Equi[parpas].custoeq=preco[10];
+            Equi[parpas].ConsumoEnergia=KWh[10];
+            Equi[parpas].tipo=11;
+            parpas++;
+        }
+    }
+    //InV OLT
+    if(numEq[11]>0){
+        for(int i=0;i<numEq[11];i++){
+            Equi[parpas].distancia=0;
+            Equi[parpas].taxadefalha=taxas_de_falha[11]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[11];
+            Equi[parpas].instalacao=tempo_de_inst[11];
+            Equi[parpas].custoeq=preco[11];
+            Equi[parpas].ConsumoEnergia=KWh[11];
+            Equi[parpas].tipo=12;
             parpas++;
         }
     }
@@ -255,7 +386,7 @@ public class SimuladorTCO_fotoMod{
         Equi[parpas].tipo=12;
         parpas++;
     }
-    
+    /*
     //Onus     
     int [][] Onucli=new int[3][numEq[0]]; //cria armazenador de posição de ONU
     if(numEq[0]>0){
@@ -781,20 +912,7 @@ public class SimuladorTCO_fotoMod{
         }
     }
     
-    /*
-    System.out.println("nEquipamento:  " +numtoteq);
-    for(int i=0;i<numtoteq;i++){
-    System.out.println("------------------------" + (i+1));    
-    System.out.println("Equipamento:  " + (i+1));
-    System.out.println("Tipo:  " + Equi[i].tipo);
-    System.out.println("Clientes:  "+ Arrays.toString(Equi[i].clientes));
-    System.out.println("Proteção:  "+Arrays.toString(Equi[i].protecao));
-    System.out.println("Distancia:  "+Equi[i].distancia  );
-    System.out.println("Preço:  "+Equi[i].custoeq);
-    System.out.println("Tempo de Instalação:  "+Equi[i].instalacao);
-    System.out.println("Taxa de Falha:  "+Equi[i].taxadefalha);
-    System.out.println("Tempo de Reparo:  "+Equi[i]. tempodereparo);
-    }*/
+    
     
     double sumaux3=0;
         double sumaux4=0;
@@ -819,13 +937,7 @@ public class SimuladorTCO_fotoMod{
         System.out.println("taxa de falha geral:  "+TXFG);
         //System.out.println(TXFG);
     //tempo e numero de iterações
-        /*
-        double TEF;
-        TEF=1000000000/(1000000000*(TXFG+TXFG*TXFG));
-        TEF=(365*24)/TEF;
-        TEF=Math.ceil(TEF)*Ny*2;
-        int numittt=(int) TEF;
-        System.out.println("numero de iterações" + numittt);*/
+        
     //numero de falhas de ONU , FDS e Olt Chassi em Ny
         double TEFOnu=numEq[0]*((365*24*Ny)/(1000000000.0/taxas_de_falha[0]));
         //System.out.println("Onu"+TEFOnu);
@@ -981,12 +1093,6 @@ public class SimuladorTCO_fotoMod{
                     
                     
                     double Custoret=0;
-                    /*
-                    for(int j=0;j<Num_i;j++){
-                        Custoret=Custoret+((Equi[posfalha[j]].taxadefalha+Equi[posfalha[j]].custoeq*PorcRep));
-                    }
-                    Lembrar do CIPG
-                    */
                     Custoret=(Equi[posfalha[possel]].tempodereparo)*PorcRep;
                     CustoET=sal+Custoret;
                     ProdutoCEXT=CustoET*Tempo;
@@ -1067,11 +1173,6 @@ public class SimuladorTCO_fotoMod{
                 }
                 int Num_j=0;
                 numit++;
-                /*
-                if(numit==numittt){
-                    FimWhile=1;
-                }
-                */
                 //System.out.println(Arrays.toString(Eq2));
                 if(Eq2[0]>=TEFOnu){
                     FimWhile=1;
@@ -1274,7 +1375,7 @@ public class SimuladorTCO_fotoMod{
         
 //escrever novo metodo de salvar
         
-        
+        */
   
 
         
@@ -2322,6 +2423,387 @@ public class SimuladorTCO_fotoMod{
         CustoSLA=Math.pow(NFC,alpha)*SLAC+Math.pow(NFR,alpha)*SLAR;
         //tem.out.println("custo tot:  "+CustoSLA);
         return CustoSLA;
+    }
+    private int[][] Hexagono(double raio){
+        double EstBdis,EstBdismeioL,aux1,aux2=l+1;
+        double NumeroEsp=0;
+        double cIn = 0;
+        EstBdis= 2*raio*Math.cos((Math.PI/6));
+        EstBdismeioL=EstBdis*Math.cos((Math.PI/6));
+        if(EstBdis > n*N*l){
+            EstBdis = n*N*l; 
+        }
+        if(EstBdismeioL > n*N*l){
+            EstBdismeioL = n*N*l;
+        }
+        int NumeroEsp_Ml = (int) Math.round(EstBdismeioL/l);
+        int NumeroEsp_ED = (int) Math.round(0.5*EstBdis/l);
+        int iniFiCent = declaraInicial (2*NumeroEsp_Ml, ((N*n/2)-1));
+        int iniFiVert = declaraInicial (NumeroEsp_ED, ((N*n/2)-1));        
+        int pIniFiNCent = ((N*n/2)-1) + NumeroEsp_Ml;
+        
+        int iniFiNCent = -1;
+        
+        if (pIniFiNCent >= N*n){
+            pIniFiNCent = ((N*n/2)-1) - NumeroEsp_Ml;
+        }
+        if (pIniFiNCent >= 0){
+            iniFiNCent = declaraInicial (2*NumeroEsp_Ml, (pIniFiNCent));
+        }
+        
+        int [] central = new int [N*n];
+        int [] nCentral = new int [N*n];
+        
+        central = construirFileira (NumeroEsp_Ml,iniFiCent);
+        
+        if(iniFiNCent != -1) {
+            nCentral = construirFileira (NumeroEsp_Ml,iniFiNCent);
+        }
+        System.out.println("Verifica Funcao");
+        System.out.println(Arrays.toString(nCentral));
+        System.out.println("Verifica Funcao2");
+        System.out.println(Arrays.toString(central));
+        System.out.println("Verifica Matriz");
+        int [][] cobertura= new int [n*N][n*N];
+        int aux_for=0;
+        int aux2_for=((n*N)/2)-1;
+        for (int i=iniFiVert; i<=((n*N)/2)-1;i+=NumeroEsp_ED){
+            for (int j=0; j < N*n; j++){
+                if(aux_for==0){
+                cobertura[aux2_for][j]=central[j];
+                }else{
+                cobertura[aux2_for][j]=nCentral[j];
+                }
+            }
+            aux2_for=aux2_for-NumeroEsp_ED;
+            if(aux_for==0){
+                aux_for=1;
+            }else{
+                aux_for=0;
+            }
+        }
+        aux_for = 0;
+        for (int i=(N*n/2)-1; i<N*n;i+=NumeroEsp_ED){
+            for (int j=0; j < N*n; j++){
+                if(aux_for==0){
+                cobertura[i][j]=central[j];
+                }else{
+                cobertura[i][j]=nCentral[j];
+                }
+            }
+            if (aux_for==0){
+                aux_for= 1;
+            }else {
+                aux_for= 0;
+            }
+        }
+        /*
+        //Para debug
+        int [] vetorDeImpressao = new int[cobertura[0].length];
+        for (int i=0; i<cobertura.length;i++){
+            for (int j=0; j<cobertura[0].length; j++){
+            vetorDeImpressao[j] = cobertura [i][j];
+        }
+        System.out.println(Arrays.toString(vetorDeImpressao));
+    }
+        */
+        int teste = contaCelulas(cobertura);
+        
+        int [][]matrizDeCobertura = matrizDePosicoes(cobertura, teste, SR);
+    /*    
+        int [] vetorDeImpressao = new int[matrizDeCobertura[0].length];
+        for (int i=0; i<matrizDeCobertura.length;i++){
+            for (int j=0; j<matrizDeCobertura.length; j++){
+            vetorDeImpressao[j] = matrizDeCobertura [i][j];
+        }
+        System.out.println(Arrays.toString(vetorDeImpressao));
+    }
+    
+        
+        int teste1 = contaCelulas(cobertura);
+        
+        System.out.println("Nova Matriz");
+        int [] vetorDeImpressao1 = new int[matrizDeCobertura[0].length];
+        for (int i=0; i<matrizDeCobertura.length;i++){
+            for (int j=0; j<matrizDeCobertura.length; j++){
+            vetorDeImpressao1[j] = matrizDeCobertura [i][j];
+        }
+        System.out.println(Arrays.toString(vetorDeImpressao1));
+    }  
+    */
+        
+        /*
+        int NumEstB=(int) (Math.pow(Math.ceil(DisUniEst/2.0),2)+Math.pow(Math.floor(DisUniEst/2.0),2));
+        //System.out.println("numero de estações base:"+NumEstB);
+        int[][]cenario=new int[(n*N)][(n*N)];
+        int NEBI=(int) Math.ceil(DisUniEst/2.0);
+        int NEBP=(int) Math.floor(DisUniEst/2.0);
+        int posini=1,contador1=1;
+        
+        //System.out.println(NumeroEsp);
+        while(posini>=0){
+            posini=(int) (((n*N)/2.0)-1-contador1*NumeroEsp);
+            contador1++;
+        }
+        posini=(int) (posini+NumeroEsp);
+        int poslin=posini;
+        int poscol=posini;
+        int parnp=0;
+        for(int i=0;i<NumEstB;i++){
+            cenario[poslin][poscol]=1;
+            if((poscol+2*NumeroEsp<n*N)){
+                poscol=(int) (poscol+2*NumeroEsp);
+            }else{
+                //i=i-1;
+                if(parnp==0){
+                    parnp=1;
+                }else{
+                    parnp=0;
+                }
+                poscol=(int) (posini+parnp*NumeroEsp);
+                if((poslin+NumeroEsp<n*N)){
+                    poslin=(int) (poslin+NumeroEsp);
+                }
+            }
+        }
+        int contador=0;
+        int [][]PosEstB=new int[NumEstB][2];
+        for(int i=0;i<n*N;i++){
+            for(int j=0;j<n*N;j++){
+                if(cenario[i][j]==1){
+                    cenario[i][j]=contador;
+                    PosEstB[contador][0]=i;
+                    PosEstB[contador][1]=j;
+                    contador++;
+                }
+            }
+        }
+        if(parmetodo==0){
+        double[] DisPtEstB=new double[NumEstB];
+        int[] SelEstB=new int[NumEstB];
+        for(int i=0;i<n*N;i++){
+            for(int j=0;j<n*N;j++){
+                for(int k=0;k<NumEstB;k++){
+                    DisPtEstB[k]=Math.sqrt(Math.pow((PosEstB[k][1]-j),2)+Math.pow((PosEstB[k][0]-i),2));
+                }
+                
+                double Menordis=DisPtEstB[0];
+                for(int k=0;k<NumEstB;k++){
+                    if(DisPtEstB[k]<Menordis){
+                        Menordis=DisPtEstB[k];
+                    }
+                }
+                int intersecoes=0;
+                for(int k=0;k<NumEstB;k++){
+                    if(DisPtEstB[k]==Menordis){
+                        SelEstB[k]=k+1;
+                        intersecoes++;
+                    }
+                }
+                if(intersecoes==1){
+                    for(int k=0;k<NumEstB;k++){
+                        if(SelEstB[k]>0){
+                            cenario[i][j]=SelEstB[k]-1;
+                        }
+                    }
+                }else{
+                    Random gerador = new Random(intersecoes);
+                    int Sorteio=(gerador.nextInt(intersecoes)+1);
+                    int contador2=0;
+                    int k=0,seletor=0;
+                    while(contador2<Sorteio){
+                        if(SelEstB[k]>0){
+                            contador2++;
+                            seletor=k;
+                        }
+                        k++;
+                    }
+                    cenario[i][j]=SelEstB[seletor]-1;
+                }
+                SelEstB=new int[NumEstB];
+                
+            }
+        }
+        }
+        
+        if(parmetodo==0){
+            //return cenario;
+        }else{
+            //return PosEstB;
+        }
+        */
+        return matrizDeCobertura;
+    }
+    
+    private int declaraInicial(int disH,int pIni){
+        int cIn = 0;
+        int i_while1 = 0;
+        while (cIn>=0){
+            cIn = ((pIni))-(disH*i_while1);
+            i_while1++;
+        }
+        cIn=cIn+(disH);
+        return cIn;
+    }
+    private int[] construirFileira (int disH,int inifileira){
+        int cIn[] = new int[n*N];
+        int i_while1 = inifileira;
+        while (i_while1<N*n){
+            cIn[i_while1] = 1;
+            i_while1=i_while1+2*disH;
+        }
+        return cIn;
+    }
+    
+    private int contaCelulas (int[][] cobertura){
+        int contador = 0;
+        for (int i=0; i<cobertura[0].length ;i++){
+            for (int j=0; j<cobertura.length; j++){
+                if(cobertura[i][j]==1){
+                contador+=1;
+                }
+            }
+        }
+        return contador;
+    }
+    
+    private int [][] matrizDePosicoes (int [][] cobertura, int contador, int SR){
+        int [][]matDePos = new int [contador][3];
+        int aux=0;
+        int hor = 0;
+        int vert = 0;
+        switch (SR){
+            case 16:
+                hor = 4;
+                vert = 4;
+            break;
+            case 32:
+                hor = 8;
+                vert = 4;
+            break;
+            case 64:
+                hor = 8;
+                vert = 8;
+            break;
+            default:
+        }
+        for (int i=0; i<cobertura[0].length ;i++){
+            for (int j=0; j<cobertura.length; j++){
+                if(cobertura[i][j]==1){
+                matDePos[aux][0]=i;
+                matDePos[aux][1]=j;
+                aux++;
+                }
+            }
+            
+        }
+        aux = matDePos[0][0];
+        int aux2 = 0;
+        for(int i=0; i < matDePos.length; i++){
+            if (matDePos[i][0]!= aux){
+                aux2=i;
+                break;
+            }
+        }
+        int aux3 = 0;
+        for(int i=0; i < matDePos.length; i++){
+            if (matDePos[i][0]== aux){
+                aux3++;
+            }else{
+                break;
+            }
+        }
+        int aux4 = 0;
+        for(int i=aux2; i < matDePos.length; i++){
+            if (matDePos[i][0]== matDePos[aux2][0]){
+                aux4++;
+            }else{
+                break;
+            }
+        }
+        int aux5 = 1;
+        for(int i=0; i < matDePos.length-1 ; i++){ //Generalizar o matDePos[][] para todas as colunas
+            if (matDePos[i+1][0]!= matDePos[i][0]){
+                aux5++;
+                aux5 = aux5;
+            }
+        }
+        System.out.println("comeca aqui");
+        int [][] matSimplificada = new int [aux5][aux3+aux4];
+        for (int i=0; i<aux5 ;i+=2){
+            for (int j=0; j<aux3+aux4; j+=2){
+                if(aux3>=aux4){
+                    matSimplificada[i][j] = 1;
+                    if(j+1<aux3+aux4&&i+1<aux5){
+                    matSimplificada[i+1][j+1] = 1;
+                    }
+                }else{
+                    if(j+1<aux3+aux4){
+                    matSimplificada[i][j+1] = 1;
+                    }
+                    if(i+1<aux5){
+                    matSimplificada[i+1][j] = 1;
+                    }
+                }
+            }
+        }
+        
+        matSimplificada = MatSimplificada(matSimplificada, SR);
+        
+        int cont2=0;
+        for(int i=0;i<matSimplificada.length;i++){
+            for (int j=0; j<matSimplificada[0].length;j++){
+                if(matSimplificada[i][j]>0){
+                    matDePos[cont2][2] = matSimplificada[i][j];
+                    cont2++;
+                }
+            }
+        }
+        
+        int [] vetorDeImpressao2 = new int[matDePos[0].length];
+        for (int i=0; i<matDePos.length;i++){
+            for (int j=0; j<matDePos[0].length; j++){
+            vetorDeImpressao2[j] = matDePos [i][j];
+            }
+        System.out.println(Arrays.toString(vetorDeImpressao2));
+        }
+        System.out.println("termina aqui2");
+        
+        return matDePos;
+    }
+     
+    private int[][] MatSimplificada (int[][] matSimplificada,int SR){
+        int delN = 16,  delH, delV, vIndex = 1, vIndexReset=1, auxH=0;
+        if (SR ==16){
+        delH=4;
+        delV=4;
+        } else if(SR==32){
+        delH=4;
+        delV=8;
+        } else {
+        delH=8;
+        delV=8;
+        }
+        for (int i = 0; i<matSimplificada.length;i++){
+            for (int j = 0; j<matSimplificada[0].length; j++){
+                if (matSimplificada[i][j] == 1){
+                    matSimplificada[i][j] = vIndex;
+                    auxH++;
+                }
+                if (auxH == delH){
+                    auxH=0;
+                    vIndex++;
+                }
+            }
+            auxH=0;
+            if((i+1)%delV==0){
+                vIndex++;
+                vIndexReset = vIndex;
+            } else {
+                vIndex = vIndexReset;
+            }
+        }
+        return matSimplificada;
     }
 }
 

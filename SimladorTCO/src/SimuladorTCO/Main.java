@@ -11,6 +11,6 @@ package SimuladorTCO;
  */
 public class Main {
     public static void main(String[] args) {
-        Hexagono H= new Hexagono(0.1,0);
+        SimuladorTCO_fotoMod H= new SimuladorTCO_fotoMod();
     }
 }

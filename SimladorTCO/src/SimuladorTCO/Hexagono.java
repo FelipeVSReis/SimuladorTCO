@@ -16,8 +16,8 @@ import java.util.Random;
  */
 public class Hexagono {
     double l = 0.03;
-    int n = 6;
-    int N = 6;
+    int n = 10;
+    int N = 10;
     int SR = 16; //Limitado a 16,32 ou 64 
     
     public Hexagono(double raio,int parmetodo){
@@ -105,18 +105,28 @@ public class Hexagono {
         */
         int teste = contaCelulas(cobertura);
         
-        int [][]testeFunc = matrizDePosicoes(cobertura, teste, 16);
-        
-        int [] vetorDeImpressao = new int[testeFunc[0].length];
-        for (int i=0; i<testeFunc.length;i++){
-            for (int j=0; j<testeFunc[0].length; j++){
-            vetorDeImpressao[j] = testeFunc [i][j];
+        int [][]matrizDeCobertura = matrizDePosicoes(cobertura, teste, 16);
+    /*    
+        int [] vetorDeImpressao = new int[matrizDeCobertura[0].length];
+        for (int i=0; i<matrizDeCobertura.length;i++){
+            for (int j=0; j<matrizDeCobertura.length; j++){
+            vetorDeImpressao[j] = matrizDeCobertura [i][j];
         }
         System.out.println(Arrays.toString(vetorDeImpressao));
     }
+    
         
         int teste1 = contaCelulas(cobertura);
         
+        System.out.println("Nova Matriz");
+        int [] vetorDeImpressao1 = new int[matrizDeCobertura[0].length];
+        for (int i=0; i<matrizDeCobertura.length;i++){
+            for (int j=0; j<matrizDeCobertura.length; j++){
+            vetorDeImpressao1[j] = matrizDeCobertura [i][j];
+        }
+        System.out.println(Arrays.toString(vetorDeImpressao1));
+    }  
+    */
         
         /*
         int NumEstB=(int) (Math.pow(Math.ceil(DisUniEst/2.0),2)+Math.pow(Math.floor(DisUniEst/2.0),2));
@@ -285,14 +295,14 @@ public class Hexagono {
         }
         aux = matDePos[0][0];
         int aux2 = 0;
-        for(int i=0; i < matDePos[0].length; i++){
+        for(int i=0; i < matDePos.length; i++){
             if (matDePos[i][0]!= aux){
                 aux2=i;
                 break;
             }
         }
         int aux3 = 0;
-        for(int i=0; i < matDePos[0].length; i++){
+        for(int i=0; i < matDePos.length; i++){
             if (matDePos[i][0]== aux){
                 aux3++;
             }else{
@@ -300,45 +310,96 @@ public class Hexagono {
             }
         }
         int aux4 = 0;
-        for(int i=0; i < matDePos[0].length; i++){
+        for(int i=aux2; i < matDePos.length; i++){
             if (matDePos[i][0]== matDePos[aux2][0]){
                 aux4++;
             }else{
                 break;
             }
         }
-        int aux5 = 0;
-        for(int i=0; i < matDePos[0].length; i++){ //Generalizar o matDePos[][] para todas as colunas
-            if (matDePos[i][2]!= aux){
+        int aux5 = 1;
+        for(int i=0; i < matDePos.length-1 ; i++){ //Generalizar o matDePos[][] para todas as colunas
+            if (matDePos[i+1][0]!= matDePos[i][0]){
                 aux5++;
+                aux5 = aux5;
             }
         }
-        int [][] matSimplificada = new int [aux3+aux4][aux5];
-        for (int i=0; i<aux3+aux4 ;i+=2){
-            for (int j=0; j<aux5; j+=2){
-                if(aux4-2>=aux3){
+        System.out.println("comeca aqui");
+        int [][] matSimplificada = new int [aux5][aux3+aux4];
+        for (int i=0; i<aux5 ;i+=2){
+            for (int j=0; j<aux3+aux4; j+=2){
+                if(aux3>=aux4){
                     matSimplificada[i][j] = 1;
-                    if(j+1<aux5&&i+1<aux3+aux4){
+                    if(j+1<aux3+aux4&&i+1<aux5){
                     matSimplificada[i+1][j+1] = 1;
                     }
                 }else{
-                    if(j+1<aux5){
+                    if(j+1<aux3+aux4){
                     matSimplificada[i][j+1] = 1;
                     }
-                    if(i+1<aux3+aux4){
+                    if(i+1<aux5){
                     matSimplificada[i+1][j] = 1;
                     }
                 }
             }
         }
         
-        int [] vetorDeImpressao = new int[matSimplificada[0].length];
-        for (int i=0; i<matSimplificada.length;i++){
-            for (int j=0; j<matSimplificada[0].length; j++){
-            vetorDeImpressao[j] = matSimplificada [i][j];
+        matSimplificada = MatSimplificada(matSimplificada, SR);
+        
+        int cont2=0;
+        for(int i=0;i<matSimplificada.length;i++){
+            for (int j=0; j<matSimplificada[0].length;j++){
+                if(matSimplificada[i][j]>0){
+                    matDePos[cont2][2] = matSimplificada[i][j];
+                    cont2++;
+                }
             }
-        System.out.println(Arrays.toString(vetorDeImpressao));
         }
+        
+        int [] vetorDeImpressao2 = new int[matDePos[0].length];
+        for (int i=0; i<matDePos.length;i++){
+            for (int j=0; j<matDePos[0].length; j++){
+            vetorDeImpressao2[j] = matDePos [i][j];
+            }
+        System.out.println(Arrays.toString(vetorDeImpressao2));
+        }
+        System.out.println("termina aqui2");
+        
         return matDePos;
     }
+     
+    private int[][] MatSimplificada (int[][] matSimplificada,int SR){
+        int delN = 16,  delH, delV, vIndex = 1, vIndexReset=1, auxH=0;
+        if (SR ==16){
+        delH=4;
+        delV=4;
+        } else if(SR==32){
+        delH=4;
+        delV=8;
+        } else {
+        delH=8;
+        delV=8;
+        }
+        for (int i = 0; i<matSimplificada.length;i++){
+            for (int j = 0; j<matSimplificada[0].length; j++){
+                if (matSimplificada[i][j] == 1){
+                    matSimplificada[i][j] = vIndex;
+                    auxH++;
+                }
+                if (auxH == delH){
+                    auxH=0;
+                    vIndex++;
+                }
+            }
+            auxH=0;
+            if((i+1)%delV==0){
+                vIndex++;
+                vIndexReset = vIndex;
+            } else {
+                vIndex = vIndexReset;
+            }
+        }
+        return matSimplificada;
+    }
 }
+
