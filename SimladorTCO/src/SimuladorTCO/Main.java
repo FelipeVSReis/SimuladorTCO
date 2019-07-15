@@ -11,6 +11,7 @@ package SimuladorTCO;
  */
 public class Main {
     public static void main(String[] args) {
+        
         SimuladorTCO_fotoMod H= new SimuladorTCO_fotoMod();
     }
 }

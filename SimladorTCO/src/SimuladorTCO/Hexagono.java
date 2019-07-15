@@ -369,16 +369,22 @@ public class Hexagono {
     }
      
     private int[][] MatSimplificada (int[][] matSimplificada,int SR){
-        int delN = 16,  delH, delV, vIndex = 1, vIndexReset=1, auxH=0;
+        int delH, delV, vIndex = 1, vIndexReset=1, auxH=0;
         if (SR ==16){
         delH=4;
         delV=4;
         } else if(SR==32){
         delH=4;
         delV=8;
-        } else {
+        } else if (SR == 64){
         delH=8;
         delV=8;
+        } else if (SR == 8){
+        delH = 2;
+        delV = 4;
+        } else {
+        delH = 0;
+        delV = 0;
         }
         for (int i = 0; i<matSimplificada.length;i++){
             for (int j = 0; j<matSimplificada[0].length; j++){

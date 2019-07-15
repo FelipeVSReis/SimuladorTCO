@@ -19,51 +19,31 @@ import java.util.logging.Logger;
  */
 public class SimuladorTCO_fotoMod{
     //parametros do modelo manhatttan
-    int N=4; //Número de Blocos numa fileira
-    int n=4; //Número de Resisdencias numa fileira
+    int N=14; //Número de Blocos numa fileira
+    int n=12; //Número de Resisdencias numa fileira
     double l=0.03; // Dsitancia entre residencias (km)
     double L=n*l;        // Distancia Entre Blocos
     double num_andares=1;
     //parametros de custos
-    double sal=190; //($/h)
-    double SLAR=10; // Multa Residencial($/h)
-    double SLAC=100; // Multa Residencial($/h)
-    double PrSpleaYe=204;//($/Ye) ALuguel de Espectro por Link MW
-    double alpha=1.1; //fator de impacto
-    double PrKw=0.1; // Preço Energia
-    double PrGbsh=3; // Preço Aluguel Taxa MW
-    double paraluext=1.3;//parametro eevaror de aluiguel MW
+    double sal=95; //($/h)
+    double PrKw=0.58; // Preço Energia
+    double prAluguel= 183.96;//Preco aluguel por ano
+    double prGerenc = 12.300*4*12; // Preco de gerenciamento que acabou nao sendo usado rs
+    double cAluguel = 0; // Custo com aluguel
+    double cGerenc = 0; // Custo com Gerenciamento
     //double FatorMultiplicador=10;
     double vel=20; //(Km/h)
-    double PorcentagemCom=0.8; // porcentagem usuarios comercias
-    int SR=16;   //splitting ratio(16,32 ou 64)
+    int SR=8;   //splitting ratio(16,32 ou 64)
     int NPC=72;  //numero de portas olt por chassi botar 72
    //subtituir e arqpad esqprot
    //seletores
-    int selCO=1;
-    // 1 olt 
-    // 2 olt cruzado
-    int selENA=1;
-    // 1 fibra
-    // 2 fibra duplicada
-    int selRN=1;
-    // 1 splitter
-    // 2 awg
-    int selEND=1;
-    // 1 fibra
-    // 2 fibra duplicada
-    int selRES=1;
-    // 1 ONU
-    // 2 ONU5g
-    int TypeMW=3;
-    // 0 sem MW
-    // 1 MW Leas.
-    // 2 MW upgrade
-    // 3 MW Prop.
-    double PSFP=1; 
-    double P_low=37;
-    double P_high=95.2;
-
+    int typePon = 0;
+    // 0 GPON
+    // 1 10GPON
+    // 2 40GPON
+    int typeSF = 1;
+    // 0 sem painel
+    // 1 com painel
     //Parametros Monte Carlo
     //int numittt=200;
     int Ny=5;
@@ -71,31 +51,47 @@ public class SimuladorTCO_fotoMod{
     double PorcRep=0.3; //reparo
     //Dados de Equipamentos
     // {onu,fiber,splitter,olt port,Rn chassi,Olt Chassi,switches,GES,Micro,Pico,Antena,macro}
-    double[] taxas_de_falha={256,2381,120,1075,666.6,500,200,500,3225.8,1612.9,540,32258.06}; //(fit)
-    double[] tempo_de_reparo={1,7,1,1,1,1,2,1,2,2,1,7}; //(h)
-    double[] tempo_de_inst={1,0,0.166666667,0.166666667,0.166666667,0.5,0.166666667,1,2,1,0.16,24}; //(h)
-    double[] preco={350,0,50,7600,700,4500,367*Math.ceil((num_andares/16.0)),1980,9000,1600,2000,22000}; //($)
-    double[] KWh={5,0,0,1197,0,0,0,20+14*num_andares,150,45,0,22000}; //(W)
+    //PICO, ONU, Painel ONU, Inversor ONU, Distribution Fiber Step, SPL, RN Chassi, Feeder Fiber Step, OLT, OltChassi, Painel OLT, Inversor OLT e Macro
+    double[] taxas_de_falha={2000,256,191,345,2381,120,50,500,2381,1075,667,191,381,2000}; //(fit)
+    double[] tempo_de_reparo={6,4,6,6,22,4.25,4.25,22,2,2,6,6,8}; //(h)
+    double[] tempo_de_inst={1,1,2.45,1.3,0,0.17,0.17,0,0.17,0.5,2.45,1.3,24}; //(h)
+    double[] preco={0,0,379,600,0,SR*3.75,400,0,0,2700,379,20246,0}; //($)
+    double[] KWh={70,0,0,0,0,0,0,0,0,0,0,800}; //(W)
     double[] areacobertura={0.25,0.1};//{micro,pico}//até 0.25
-    double PkmVF=160; //instalar
-    double PkmTF=130000; //trenching
+    double PkmVF=700; //instalar
+    double PkmTF=57000; //trenching
     
     
     public SimuladorTCO_fotoMod()// throws IOException
     { 
-    if(TypeMW==0){
-        taxas_de_falha[8]=0;
-        taxas_de_falha[9]=0;
-        taxas_de_falha[10]=0;
-        taxas_de_falha[11]=0;
-        KWh[8]=0;
-        KWh[9]=0;
-        KWh[10]=0;
-        KWh[11]=0;
+    
+    switch (typePon){
+        case 0:
+            preco[1]=220;
+            KWh[1]=5;      
+            preco[8]=3250;
+            KWh[8]=16;
+            break;
+        case 1:
+            preco[1]=930;
+            KWh[1]=6.5;      
+            preco[8]=13760;
+            KWh[8]=34.4;
+            break;
+        case 2:
+            preco[1]=1860;
+            KWh[1]=13;      
+            preco[8]=27510;
+            KWh[8]=137.6;
+            break;
+        default:
+            System.out.println("SR invalido");
     }
+     
     //System.out.println(Arrays.toString(taxas_de_falha));
     //Numero de Equipamentos
     //{onu,dstep,spt,rn,fstep,oltc,fswt,pfstep,dswt,pdstep,GES,Micro,Pico,Ant,oltp,macro, olt splitter, olt splitter switch}
+    //PICO, ONU, Painel ONU, Inversor ONU, Distribution Fiber Step, SPL, RN Chassi, Feeder Fiber Step, OLT, Painel OLT, Inversor OLT e Macro
     
     int [] numEq=new int[18];
     int numspq=0;
@@ -112,15 +108,100 @@ public class SimuladorTCO_fotoMod{
     int [][] Resposta = Hexagono (areacobertura[1]);
     numEq[0] = Resposta.length;
     numEq[1] = Resposta.length;
-    numEq[2] = Resposta.length;
+    numEq[2] = 0;
+    if (typeSF ==1){
+        switch(typePon){
+            case 0:
+                if(SR ==8){
+                numEq[2] = 76;
+                }else {
+                numEq[2] = 44;
+                }
+                break;
+            case 1:
+                if(SR ==8){
+                numEq[2] = 162;
+                }else {
+                numEq[2] = 89;
+                }
+                break;
+            case 2:
+                if(SR ==8){
+                numEq[2] = 647;
+                }else {
+                numEq[2] = 360;
+                }
+                break;
+            default:
+                System.out.println("SR invalido");
+        }
+    } else {
+    numEq[2] = 0;
+    }
+    if (typeSF==1){
     numEq[3] = Resposta.length;
-    numEq[4] = Resposta[Resposta.length-1][2];
+    } else {
+    numEq[3] = 0;
+    }
+    numEq[4] = 0;
+    
+    int auxAtual=0;
+    for (int i=0;i<Resposta.length;i++){
+        if(auxAtual == Resposta[1][2]){
+            numEq[4]++;
+        } else {
+            auxAtual++;
+        }
+    }
+    
     numEq[5] = Resposta[Resposta.length-1][2];
     numEq[6] = Resposta[Resposta.length-1][2];
-    numEq[7] = (int)Math.ceil(numEq[6]/NPC);
-    numEq[8] = 1;//num de inversores temporarias
-    numEq[9] = 1;//num de placas temporarias
-            
+    numEq[7] = (int)Math.ceil((Math.sqrt(Resposta[Resposta.length-1][2])+1)*Math.sqrt(Resposta[Resposta.length-1][2]));
+    numEq[8] = Resposta[Resposta.length-1][2]+1;
+    numEq[9] = (int)Math.ceil(numEq[6]/NPC);
+    numEq[10] = 0;//num de inversores temporarias
+    if(typeSF==1){
+        switch(typePon){
+            case 0:
+                if(SR ==8){
+                numEq[10] = 76;
+                }else {
+                numEq[10] = 44;
+                }
+                break;
+            case 1:
+                if(SR ==8){
+                numEq[10] = 162;
+                }else {
+                numEq[10] = 89;
+                }
+                break;
+            case 2:
+                if(SR ==8){
+                numEq[10] = 647;
+                }else {
+                numEq[10] = 360;
+                }
+                break;
+            default:
+                System.out.println("SR invalido");
+        }
+    } else {
+    numEq[10]=0;
+    }
+    
+    numEq[11] = 1;//num de placas temporarias
+            if (typeSF ==1){
+                if (SR ==8 && typePon == 2){
+                    numEq[11] = 2;
+                }
+            } else {
+                numEq[11]=0;
+            }
+    numEq[12] = 1; 
+    
+    
+           
     //Calculo do num total de equipamentos
     int numtoteq=0;
     for(int i=0;i<18;i++){
@@ -136,7 +217,7 @@ public class SimuladorTCO_fotoMod{
     //det distancias
     double [][] respostaSPL = new double [Resposta.length][2];
     int pc = (N*n-1)/2;
-    int auxAtual = 1;
+    auxAtual = 1;
     double [] auxResposta = new double [Resposta[Resposta.length-1][2]];
     int [][] posSPL = new int [Resposta[Resposta.length-1][2]][2];
     
@@ -191,7 +272,7 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].distancia= DisestB[i];
             Equi[parpas].taxadefalha=taxas_de_falha[1]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[1];
-            Equi[parpas].instalacao=tempo_de_inst[1];
+            Equi[parpas].instalacao=tempo_de_inst[1]+ Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[1];
             Equi[parpas].ConsumoEnergia=KWh[1];
             Equi[parpas].tipo=2;
@@ -200,11 +281,21 @@ public class SimuladorTCO_fotoMod{
     }
     //PN ONU
     if(numEq[2]>0){
-        for(int i=0;i<numEq[2];i++){
+        for(int i=0;i<numEq[2]/2;i++){
             Equi[parpas].distancia= DisestB[i];
             Equi[parpas].taxadefalha=taxas_de_falha[2]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[2];
-            Equi[parpas].instalacao=tempo_de_inst[2];
+            Equi[parpas].instalacao=tempo_de_inst[2] + Equi[parpas].distancia/vel;
+            Equi[parpas].custoeq=preco[2];
+            Equi[parpas].ConsumoEnergia=KWh[2];
+            Equi[parpas].tipo=3;
+            parpas++;
+        }
+        for(int i=0;i<numEq[2]/2;i++){
+            Equi[parpas].distancia= DisestB[i];
+            Equi[parpas].taxadefalha=taxas_de_falha[2]/1000000000.0;
+            Equi[parpas].tempodereparo=tempo_de_reparo[2];
+            Equi[parpas].instalacao=tempo_de_inst[2] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[2];
             Equi[parpas].ConsumoEnergia=KWh[2];
             Equi[parpas].tipo=3;
@@ -217,7 +308,7 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].distancia=DisestB[i];
             Equi[parpas].taxadefalha=taxas_de_falha[3]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[3];
-            Equi[parpas].instalacao=tempo_de_inst[3];
+            Equi[parpas].instalacao=tempo_de_inst[3] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[3];
             Equi[parpas].ConsumoEnergia=KWh[3];
             Equi[parpas].tipo=4;
@@ -225,7 +316,6 @@ public class SimuladorTCO_fotoMod{
         }
     }
     //Distribuition Fiber Step
-    auxAtual=1;
     double medclusters= 0;
     for (int i=0;i<Resposta.length;i++){
         medclusters=medclusters+DisestB[i];
@@ -239,6 +329,8 @@ public class SimuladorTCO_fotoMod{
     
     medclusters=medclusters/numEq[0];
     
+    double sumDisEst= 0;
+        
     if(numEq[4]>0){
         for(int i=0;i<numEq[4];i++){
             Equi[parpas].distancia=medclusters;
@@ -251,20 +343,23 @@ public class SimuladorTCO_fotoMod{
             parpas++;
         }
     }
+    
     //SPL
     if(numEq[5]>0){
         for(int i=0;i<numEq[5];i++){
             Equi[parpas].distancia=Math.sqrt((respostaSPL[i][0]-pc)*(respostaSPL[i][0]-pc)
                 +(respostaSPL[i][1]-pc)*(respostaSPL[i][1]-pc));
+            sumDisEst += Equi[parpas].distancia; 
             Equi[parpas].taxadefalha=taxas_de_falha[5]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[5];
-            Equi[parpas].instalacao=tempo_de_inst[5];
+            Equi[parpas].instalacao=tempo_de_inst[5] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[5];
             Equi[parpas].ConsumoEnergia=KWh[5];
             Equi[parpas].tipo=6;
             parpas++;
         }
     }
+    
     //RN chassi
     if(numEq[6]>0){
         for(int i=0;i<numEq[6];i++){
@@ -272,13 +367,14 @@ public class SimuladorTCO_fotoMod{
                 +(respostaSPL[i][1]-pc)*(respostaSPL[i][1]-pc));
             Equi[parpas].taxadefalha=taxas_de_falha[6]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[6];
-            Equi[parpas].instalacao=tempo_de_inst[6];
+            Equi[parpas].instalacao=tempo_de_inst[6] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[6];
             Equi[parpas].ConsumoEnergia=KWh[6];
             Equi[parpas].tipo=7;
             parpas++;
         }
     }
+    
     //Feeder Fiber Step
     medEstB = Resposta[Resposta.length-1][2];
     
@@ -321,6 +417,7 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].tipo=8;
             parpas++;
         }
+    }
     
     //OLT atualizar os valores
     if(numEq[8]>0){
@@ -328,7 +425,7 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].distancia=0;
             Equi[parpas].taxadefalha=taxas_de_falha[8]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[8];
-            Equi[parpas].instalacao=tempo_de_inst[8];
+            Equi[parpas].instalacao=tempo_de_inst[8] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[8];
             Equi[parpas].ConsumoEnergia=KWh[8];
             Equi[parpas].tipo=9;
@@ -341,9 +438,9 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].distancia=0;
             Equi[parpas].taxadefalha=taxas_de_falha[9]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[9];
-            Equi[parpas].instalacao=tempo_de_inst[9];
+            Equi[parpas].instalacao=tempo_de_inst[9] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[9];
-            Equi[parpas].ConsumoEnergia=KWh[89];
+            Equi[parpas].ConsumoEnergia=KWh[9];
             Equi[parpas].tipo=10;
             parpas++;
         }
@@ -354,7 +451,7 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].distancia=0;
             Equi[parpas].taxadefalha=taxas_de_falha[10]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[10];
-            Equi[parpas].instalacao=tempo_de_inst[10];
+            Equi[parpas].instalacao=tempo_de_inst[10] + Equi[parpas].distancia/vel;
             Equi[parpas].custoeq=preco[10];
             Equi[parpas].ConsumoEnergia=KWh[10];
             Equi[parpas].tipo=11;
@@ -368,7 +465,7 @@ public class SimuladorTCO_fotoMod{
             Equi[parpas].taxadefalha=taxas_de_falha[11]/1000000000.0;
             Equi[parpas].tempodereparo=tempo_de_reparo[11];
             Equi[parpas].instalacao=tempo_de_inst[11];
-            Equi[parpas].custoeq=preco[11];
+            Equi[parpas].custoeq=preco[11] + Equi[parpas].distancia/vel;
             Equi[parpas].ConsumoEnergia=KWh[11];
             Equi[parpas].tipo=12;
             parpas++;
@@ -376,559 +473,15 @@ public class SimuladorTCO_fotoMod{
     }
     
     //Macro
-    if(numEq[15]>0){
-        Equi[parpas].protecao[0]=7;
-        Equi[parpas].taxadefalha=taxas_de_falha[11]/1000000000.0;
-        Equi[parpas].tempodereparo=tempo_de_reparo[11];
-        Equi[parpas].instalacao=tempo_de_inst[11];
-        Equi[parpas].custoeq=preco[11];
-        Equi[parpas].ConsumoEnergia=KWh[11];
-        Equi[parpas].tipo=12;
-        parpas++;
-    }
-    /*
-    //Onus     
-    int [][] Onucli=new int[3][numEq[0]]; //cria armazenador de posição de ONU
-    if(numEq[0]>0){
-        int paronu=0;
-        //preco,Qaux,PVaux,PHaux,Cli,Cli,Dis,TXf,TemR,TemI.
-        for(int i=0;i<numEq[0];i++){
-            double[] ONU=CriarONU(i,paronu);
-            Equi[parpas].custoeq=ONU[0];
-            Onucli[0][i]=(int) ONU[1];
-            Onucli[1][i]=(int) ONU[2];
-            Onucli[2][i]=(int) ONU[3];
-            Equi[parpas].clientes[0]=(int) ONU[4];
-            Equi[parpas].clientes[1]=(int) ONU[5];
-            Equi[parpas].distancia=ONU[6];
-            Equi[parpas].taxadefalha=ONU[7];
-            Equi[parpas].tempodereparo=ONU[8];
-            Equi[parpas].instalacao=ONU[9];
-            Equi[parpas].ConsumoEnergia=KWh[0];
-            Equi[parpas].tipo=0;
-            paronu++;
-            if(paronu==Math.pow(n,2)){
-                paronu=0;
-            }
-            parpas++;
-        }
-    }
-    //System.out.println(parpas);
-    //Fiber distribuition Steps
-    if(numEq[1]>0){
-        int pards=0;
-        for(int i=0;i<numEq[1];i++){
-            double[] DS=CriarDisStep(i,parpas,pards,numEq[0],Onucli);
-            //Cli,Cli,Dis,Prot,Prot,Prot,TXf,TemR.
-            Equi[parpas].clientes[0]=(int) DS[0];
-            Equi[parpas].clientes[1]=(int) DS[1];
-            Equi[parpas].distancia=DS[2];
-            Equi[parpas].protecao[0]=(int) DS[3];
-            Equi[parpas].protecao[1]=(int) DS[4];
-            Equi[parpas].protecao[2]=(int) DS[5];
-            //System.out.println(Arrays.toString(DS));
-            Equi[parpas].taxadefalha=DS[6];
-            Equi[parpas].tempodereparo=DS[7];
-            Equi[parpas].tipo=1;
-            pards++;
-            if(pards==((n+1)*n)){
-                pards=0;
-            }
-            parpas++;
-        }
-    }
-    //Splitters
-    if(numEq[2]>0){
-        int Cps=0;
-        int CliQ=(int) Math.pow(n,2);
-        for(int i=0;i<numEq[2];i++){
-            double [] Splitter=Criar_Splitter(i, parpas, numspq, numEq[0], Cps, CliQ);
-            //Cli,Cli,Dis,preco,TXf,TemR,TemI,Cps.
-            Equi[parpas].clientes[0]=(int) Splitter[0];
-            Equi[parpas].clientes[1]=(int) Splitter[1];
-            Equi[parpas].distancia=Splitter[2];
-            Equi[parpas].custoeq=Splitter[3];
-            Equi[parpas].taxadefalha=Splitter[4];
-            Equi[parpas].tempodereparo=Splitter[5];
-            Equi[parpas].instalacao=Splitter[6];
-            Equi[parpas].instalacao=Splitter[6];
-            Equi[parpas].tipo=2;
-            Cps=(int) Splitter[7];
-            CliQ=(int) Splitter[8];
-            parpas++;
-        }
-    }
-    //OLT ports
-    if(numEq[2]>0){
-        int Cps=0;
-        int CliQ=(int) Math.pow(n,2);
-        for(int i=0;i<numEq[2];i++){
-            double [] Splitter=Criar_Splitter(i, parpas, numspq, numEq[0], Cps, CliQ);
-            //Cli,Cli,Dis,preco,TXf,TemR,TemI,Cps.
-            Equi[parpas].clientes[0]=(int) Splitter[0];
-            Equi[parpas].clientes[1]=(int) Splitter[1];
-            Equi[parpas].taxadefalha=taxas_de_falha[3]/1000000000.0;
-            Equi[parpas].tempodereparo=tempo_de_reparo[3];
-            Equi[parpas].instalacao=tempo_de_inst[3];
-            Equi[parpas].custoeq=preco[3];
-            Equi[parpas].ConsumoEnergia=KWh[3];
-            Equi[parpas].tipo=3;
-            Cps=(int) Splitter[7];
-            CliQ=(int) Splitter[8];
-            parpas++;
-        }
-        if(((numEq[5]%2==0)&&((numEq[2]/NPC) %2!=0))&&selCO==2){
-            for(int i=0;i<NumeroOLTPextra;i++){
-                Equi[parpas].clientes[0]=0;
-                Equi[parpas].clientes[1]=0;
-                Equi[parpas].taxadefalha=taxas_de_falha[3]/1000000000.0;
-                Equi[parpas].tempodereparo=tempo_de_reparo[3];
-                Equi[parpas].instalacao=tempo_de_inst[3];
-                Equi[parpas].custoeq=preco[3];
-                Equi[parpas].ConsumoEnergia=KWh[3];
-                Equi[parpas].tipo=3;
-            parpas++;
-            }
-        }else if((numEq[5]%2!=0)&&selCO==2){
-            for(int i=0;i<NumeroOLTPextra2;i++){
-                Equi[parpas].clientes[0]=0;
-                Equi[parpas].clientes[1]=0;
-                Equi[parpas].taxadefalha=taxas_de_falha[3]/1000000000.0;
-                Equi[parpas].tempodereparo=tempo_de_reparo[3];
-                Equi[parpas].instalacao=tempo_de_inst[3];
-                Equi[parpas].custoeq=preco[3];
-                Equi[parpas].ConsumoEnergia=KWh[3];
-                Equi[parpas].tipo=3;
-            parpas++;
-            }
-        }
-        if(selCO==2){
-            int extra;
-            if(numEq[5]%2!=0){
-                extra=NumeroOLTPextra2;
-            }else{
-                extra=NumeroOLTPextra;
-            }
-            int NCtrab;
-            int Nolttot=numEq[14]+extra;
-            int [] Vetordef=new int[Nolttot];
-            if(numEq[5]%2==0){
-                NCtrab=numEq[5];
-            }else{
-                NCtrab=numEq[5]+1;
-            }
-            int varsai=0;
-            int countwhile=0;
-            int countwhile2=0;
-            while(varsai!=1){
-                if(Equi[countwhile].tipo==3){
-                    Vetordef[countwhile2]=countwhile;
-                    countwhile2++;
-                    if(countwhile2==Nolttot){
-                        varsai=1;
-                    }
-                }
-                countwhile++;
-            }
-            int [] confoltchassi=new int[NCtrab];
-            //int confoltchassiprot=0;
-            int dstoltp=numEq[14];
-            for(int i=0;i<NCtrab;i++){
-                if(numEq[5]%2!=0){
-                    if((dstoltp-NPC)<0){
-                        confoltchassi[i]=dstoltp;
-                        confoltchassi[i+1]=dstoltp;
-                        i++;
-                    }else{
-                        confoltchassi[i]=NPC;
-                        dstoltp=dstoltp-NPC;
-                    }
-                }else{
-                    confoltchassi[i]=NPC; 
-                }
-            }
-            //comecar daqui
-            for(int i=1;i<NCtrab;i++){
-                confoltchassi[i]=confoltchassi[i]+confoltchassi[i-1];
-            }
-            int seletoresp=0;
-            for(int i=0;i<Nolttot;i++){
-                if(seletoresp%2==0){
-                    if(i<confoltchassi[seletoresp]){
-                        int dif;
-                        if(seletoresp==0){
-                            dif=confoltchassi[0];
-                        }else{
-                            dif=confoltchassi[seletoresp]-confoltchassi[seletoresp-1];;
-                        }
-                        Equi[Vetordef[i]].protecao[0]=8;
-                        Equi[Vetordef[i]].protecao[1]=Equi[Vetordef[i]+dif].clientes[0];
-                        Equi[Vetordef[i]].protecao[2]=Equi[Vetordef[i]+dif].clientes[1];
-                       }else{
-                        seletoresp++;
-                        int dif=confoltchassi[seletoresp]-confoltchassi[seletoresp-1];
-                        Equi[Vetordef[i]].protecao[0]=8;
-                        Equi[Vetordef[i]].protecao[1]=Equi[Vetordef[i]-dif].clientes[0];
-                        Equi[Vetordef[i]].protecao[2]=Equi[Vetordef[i]-dif].clientes[1];
-                    }
-                }else{
-                    if(i<confoltchassi[seletoresp]){
-                        int dif=confoltchassi[seletoresp]-confoltchassi[seletoresp-1];;
-                        Equi[Vetordef[i]].protecao[0]=8;
-                        Equi[Vetordef[i]].protecao[1]=Equi[Vetordef[i]-dif].clientes[0];
-                        Equi[Vetordef[i]].protecao[2]=Equi[Vetordef[i]-dif].clientes[1];
-                       }else{
-                        seletoresp++;
-                        int dif=confoltchassi[seletoresp]-confoltchassi[seletoresp-1];
-                        Equi[Vetordef[i]].protecao[0]=8;
-                        Equi[Vetordef[i]].protecao[1]=Equi[Vetordef[i]+dif].clientes[0];
-                        Equi[Vetordef[i]].protecao[2]=Equi[Vetordef[i]+dif].clientes[1];
-                    }
-                }
-            }
-            for(int i=0;i<Nolttot;i++){
-                if(Equi[Vetordef[i]].protecao[1]== Equi[Vetordef[i]].protecao[2]){
-                    Equi[Vetordef[i]].protecao[0]=9;//change value
-                }
-            }
-        }
-    }
-    //Rn Chassi
-    if(numEq[3]>0){
-        int CpRn=0;
-        int RCliQ=(int) Math.pow(n,2);
-        for(int i=0;i<numEq[3];i++){
-            double [] Rn_Chassi=CriarRn_Chassi(i, CpRn, RCliQ, numEq[0]);
-            //Cli,Cli,Dis,preco,TXf,TemR,TemI,CpRn.
-            Equi[parpas].clientes[0]=(int) Rn_Chassi[0];
-            Equi[parpas].clientes[1]=(int) Rn_Chassi[1];
-            Equi[parpas].distancia=Rn_Chassi[2];
-            Equi[parpas].custoeq=Rn_Chassi[3];
-            Equi[parpas].taxadefalha=Rn_Chassi[4];
-            Equi[parpas].tempodereparo=Rn_Chassi[5];
-            Equi[parpas].instalacao=Rn_Chassi[6];
-            Equi[parpas].tipo=4;
-            CpRn=(int) Rn_Chassi[7];
-            parpas++;
-        }
-    }
-    //Quadras
-    int NQ=(int) Math.pow(N,2);
-    int [][] Quadracli = new int[2][NQ];
-    for(int i=0;i<NQ;i++){
-        int PosAuxFFV=(int) Math.floor((double) i/N);
-        int PosAuxFFH= i-N*PosAuxFFV;
-        Quadracli[0][i]=PosAuxFFV;
-        Quadracli[1][i]=PosAuxFFH;
-    }
-    //Fiber feder Steps
-    if(numEq[4]>0){
-        for(int i=0;i<numEq[4];i++){
-            double[] FS=CriarFedStep(i, parpas, Quadracli, numEq[0], NQ);
-            //System.out.println(Arrays.toString(FS));
-            //Cli,Cli,Dis,Prot,Prot,Prot,TXf,TemR.
-            Equi[parpas].clientes[0]=(int) FS[0];
-            Equi[parpas].clientes[1]=(int) FS[1];
-            Equi[parpas].distancia=FS[2];
-            Equi[parpas].protecao[0]=(int) FS[3];
-            Equi[parpas].protecao[1]=(int) FS[4];
-            Equi[parpas].protecao[2]=(int) FS[5];
-            Equi[parpas].taxadefalha=FS[6];
-            Equi[parpas].tempodereparo=FS[7];
-            Equi[parpas].tipo=5;
-            parpas++;
-        }
-    }
-    //olt chassi
-    if(numEq[5]>0){
-        int alnumspt=numEq[2];
-        int contoc = 0;
-        for(int i=0;i<numEq[5];i++){
-            double[] OLTC=CriarOltC(i, alnumspt, numEq[0], numEq[1], numEq[2], contoc, Equi);
-            //Cli,Cli,Preco,TXf,TemR,TemI,contoc.
-            Equi[parpas].clientes[0]=(int) OLTC[0];
-            Equi[parpas].clientes[1]=(int) OLTC[1];
-            Equi[parpas].custoeq=OLTC[2];
-            Equi[parpas].taxadefalha=OLTC[3];
-            Equi[parpas].tempodereparo=OLTC[4];
-            Equi[parpas].instalacao=OLTC[5];
-            Equi[parpas].tipo=6;
-            contoc=(int) OLTC[6];
-            parpas++;
-        }
-        
-        if(selCO==2){
-                int numtotchassi=numEq[5];
-                if(numEq[5]%2!=0){
-                    Equi[parpas].clientes[0]=0;
-                    Equi[parpas].clientes[1]=0;
-                    Equi[parpas].custoeq=Equi[parpas-1].custoeq;
-                    Equi[parpas].taxadefalha=Equi[parpas-1].taxadefalha;
-                    Equi[parpas].tempodereparo=Equi[parpas-1].tempodereparo;
-                    Equi[parpas].instalacao=Equi[parpas-1].instalacao;
-                    Equi[parpas].tipo=6;
-                    parpas++;
-                    numtotchassi=numtotchassi+1;
-                }
-                for(double i=0.5;i<numtotchassi;i++){
-                    int cima=(int) Math.ceil((i*1.0));
-                    int baixo=(int) Math.floor((i*1.0));
-                    Equi[parpas-(numtotchassi)+cima].protecao[0]=8;
-                    Equi[parpas-(numtotchassi)+cima].protecao[1]=Equi[parpas-(numtotchassi)+baixo].clientes[0];
-                    Equi[parpas-(numtotchassi)+cima].protecao[2]=Equi[parpas-(numtotchassi)+baixo].clientes[1];
-                    Equi[parpas-(numtotchassi)+baixo].protecao[0]=8;
-                    Equi[parpas-(numtotchassi)+baixo].protecao[1]=Equi[parpas-(numtotchassi)+cima].clientes[0];
-                    Equi[parpas-(numtotchassi)+baixo].protecao[2]=Equi[parpas-(numtotchassi)+cima].clientes[1];
-                    i++;
-                }
-        }
-        
-        
-    }
-    //{onu,dstep,spt,rn,fstep,oltc,fswt,pfstep,dswt,pdstep,GES,Micro,Pico,Ant,oltp,macro}
-    //olt swithchs
-    if(numEq[6]>0){
-        int Cps=0;
-        int CliQ=(int) Math.pow(n,2);
-        for(int i=0;i<numEq[2];i++){
-            double [] Splitter=Criar_Splitter(i, parpas, numspq, numEq[0], Cps, CliQ);
-            //Cli,Cli,Dis,preco,TXf,TemR,TemI,Cps.
-            Equi[parpas].clientes[0]=(int) Splitter[0];
-            Equi[parpas].clientes[1]=(int) Splitter[1];
-            Equi[parpas].taxadefalha=taxas_de_falha[6]/1000000000.0;
-            Equi[parpas].tempodereparo=tempo_de_reparo[6];
-            Equi[parpas].instalacao=tempo_de_inst[6];
-            Equi[parpas].custoeq=preco[6];
-            Equi[parpas].tipo=7;
-            Cps=(int) Splitter[7];
-            CliQ=(int) Splitter[8];
-            parpas++;
-        }
-    }
-    //feeder fiber protection steps
-    if(numEq[7]>0){
-        for(int i=0;i<numEq[7];i++){
-            double[] PFFS=CriarPFedStep(i);
-            //prot,prot,prot,dis,TXf,TemR.
-            Equi[parpas].protecao[0]=(int) PFFS[0];
-            Equi[parpas].protecao[1]=(int) PFFS[1];
-            Equi[parpas].protecao[2]=(int) PFFS[2];
-            Equi[parpas].distancia= PFFS[3];     
-            Equi[parpas].taxadefalha=PFFS[4];
-            Equi[parpas].tempodereparo=PFFS[5];
-            Equi[parpas].tipo=8;
-            parpas++;
-        }
-    }
-    //onu switch
-    if(numEq[8]>0){
-        for(int i=0;i<numEq[0];i++){
-            Equi[parpas].clientes=Equi[i].clientes;
-            //Equi[parpas].distancia=Equi[i].distancia;
-            int Quadraaux=(int) Math.floor((double) i/Math.pow(n,2));
-            int PosAuxFFV=(int) Math.floor((double) Quadraaux/N);
-            int PosAuxFFH= Quadraaux-N*PosAuxFFV;
-            if(PosAuxFFV<N/2.0){
-                if(PosAuxFFH<N/2.0){
-                    Equi[parpas].distancia=(((N-(2*PosAuxFFH+1))+(N-(2*PosAuxFFV+1)))*(L/2.0));
-                }else{
-                    Equi[parpas].distancia=(((N-(2*(N-PosAuxFFH-1)+1))+(N-(2*PosAuxFFV+1)))*(L/2.0));
-                }
-            }else{
-                PosAuxFFV=N-PosAuxFFV-1;
-                if(PosAuxFFH<N/2.0){
-                    Equi[parpas].distancia=(((N-(2*PosAuxFFH+1))+(N-(2*PosAuxFFV+1)))*(L/2.0));
-                }else{
-                    Equi[parpas].distancia=(((N-(2*(N-PosAuxFFH-1)+1))+(N-(2*PosAuxFFV+1)))*(L/2.0));
-                }
-            }
-            Equi[parpas].taxadefalha=taxas_de_falha[6]/1000000000.0;
-            Equi[parpas].tempodereparo=tempo_de_reparo[6];
-            Equi[parpas].instalacao=tempo_de_inst[6];
-            Equi[parpas].custoeq=preco[6];
-            Equi[parpas].tipo=9;
-            parpas++;
-        }
-    }
-    //distribuition fiber protection steps
-    if(numEq[9]>0){
-        int pardsp=0;
-        for(int i=0;i<numEq[9];i++){
-            double[] PFDS=CriarPdisStep(i, pardsp);
-            //prot,prot,prot,dis,TXf,TemR.
-            Equi[parpas].protecao[0]=(int) PFDS[0];
-            Equi[parpas].protecao[1]=(int) PFDS[1];
-            Equi[parpas].protecao[2]=(int) PFDS[2];
-            Equi[parpas].distancia=PFDS[3];
-            Equi[parpas].taxadefalha=PFDS[4];
-            Equi[parpas].tempodereparo=PFDS[5];
-            Equi[parpas].tipo=10;
-            pardsp++;
-            if(pardsp==((n-1)*n)){
-                pardsp=0;
-            }
-            parpas++;
-        }
-    }
-    //GES
-    if(numEq[10]>0){
-        int paronu=0;
-        for(int i=0;i<numEq[10];i++){
-            double[] ONU=CriarONU(i,paronu);
-            Equi[parpas].clientes[0]=i;
-            Equi[parpas].clientes[1]=i;
-            Equi[parpas].distancia=ONU[6];
-            Equi[parpas].taxadefalha=taxas_de_falha[7]/1000000000.0;
-            Equi[parpas].tempodereparo=tempo_de_reparo[7];
-            Equi[parpas].instalacao=tempo_de_inst[7];
-            Equi[parpas].custoeq=preco[7];
-            Equi[parpas].ConsumoEnergia=KWh[7];
-            Equi[parpas].tipo=11;
-            paronu++;
-            if(paronu==Math.pow(n,2)){
-                paronu=0;
-            }
-            parpas++;
-        }
-        
-    }
-    
-    //Antena Macro
-    if(numEq[13]>0){
-        int NuEB=0;
-        int contEB=0;
-        if(numEq[11]>0){
-            NuEB=numEq[11];
-        }else if(numEq[12]>0){
-            NuEB=numEq[12];
-        }
-        for(int i=0;i<numEq[13];i++){
-        if(TypeMW>0){
-            Equi[parpas].protecao[0]=7;
-            Equi[parpas].protecao[1]=contEB;
-            if(NuEB<=16){
-                Equi[parpas].protecao[2]=contEB+NuEB-1;
-            }else{
-                Equi[parpas].protecao[2]=contEB+15;
-                NuEB=NuEB-16;
-                contEB=contEB+16;
-            }
-        }
-        Equi[parpas].taxadefalha=taxas_de_falha[10]/1000000000.0;
-        Equi[parpas].tempodereparo=tempo_de_reparo[10];
-        Equi[parpas].instalacao=tempo_de_inst[10];
-        Equi[parpas].custoeq=preco[10];
-        Equi[parpas].ConsumoEnergia=KWh[10];
+    if(numEq[12]>0){
+        Equi[parpas].taxadefalha=taxas_de_falha[12]/1000000000.0;
+        Equi[parpas].tempodereparo=tempo_de_reparo[12];
+        Equi[parpas].instalacao=tempo_de_inst[12];
+        Equi[parpas].custoeq=preco[12];
+        Equi[parpas].ConsumoEnergia=KWh[12];
         Equi[parpas].tipo=13;
         parpas++;
-        }
     }
-    //Micro
-    if(numEq[11]>0){
-        for(int i=0;i<numEq[11];i++){
-            Equi[parpas].distancia=1;
-            Equi[parpas].protecao[0]=7;
-            Equi[parpas].protecao[1]=i;
-            Equi[parpas].protecao[2]=i;
-            Equi[parpas].taxadefalha=taxas_de_falha[8]/1000000000.0;
-            Equi[parpas].tempodereparo=tempo_de_reparo[8];
-            Equi[parpas].instalacao=tempo_de_inst[8];
-            Equi[parpas].custoeq=preco[8];
-            Equi[parpas].ConsumoEnergia=KWh[8];
-            Equi[parpas].tipo=14;
-            parpas++;
-        }
-    }
-    
-    int numeqant=0;
-    for(int i=6;i<16;i++){
-        numeqant=numeqant+numEq[i];
-    }
-    //Olt port Switch
-    if((numEq[17]>0)&&(selCO==2)){
-        int Cps=0;
-        int CliQ=(int) Math.pow(n,2);
-        for(int i=0;i<numEq[17];i++){
-            double [] Splitter=Criar_Splitter(i, parpas, numspq, numEq[0], Cps, CliQ);
-            Equi[parpas].distancia=1;
-            Equi[parpas].clientes[0]=(int) Splitter[0];
-            Equi[parpas].clientes[1]=(int) Splitter[1];
-            Equi[parpas].taxadefalha=taxas_de_falha[6]/1000000000.0;
-            Equi[parpas].tempodereparo=tempo_de_reparo[6];
-            Equi[parpas].instalacao=tempo_de_inst[6];
-            Equi[parpas].custoeq=preco[6];
-            Equi[parpas].ConsumoEnergia=KWh[6];
-            Cps=(int) Splitter[7];
-            CliQ=(int) Splitter[8];
-            Equi[parpas].tipo=16;
-            parpas++;
-        }
-    }
-    //Olt Spliter
-    
-    if((numEq[16]>0)&&(selCO==2)){
-        int Cps=0;
-        int CliQ=(int) Math.pow(n,2);
-        int extra;
-        if(numEq[5]%2!=0){
-            extra=NumeroOLTPextra2;
-        }else{
-            extra=NumeroOLTPextra;
-        }
-        int Nolttot=numEq[14]+extra; 
-        int [] Vetordef=new int[Nolttot];
-        int varsai=0;
-        int countwhile=0;
-        int countwhile2=0;
-        while(varsai!=1){
-            if(Equi[countwhile].tipo==3){
-                Vetordef[countwhile2]=countwhile;
-                countwhile2++;
-                if(countwhile2==Nolttot){
-                    varsai=1;
-                }
-            }
-                countwhile++;
-        }
-        for(int i=0;i<Nolttot;i++){
-            if(Equi[Vetordef[i]].protecao[0]==8){
-                if(Equi[Vetordef[i]].clientes[0]==0&&Equi[Vetordef[i]].clientes[1]==0){
-                }else{
-                    Equi[parpas].tipo=17;
-                    Equi[parpas].distancia=1;
-                    Equi[parpas].clientes[0]=Equi[Vetordef[i]].clientes[0];
-                    Equi[parpas].clientes[1]=Equi[Vetordef[i]].clientes[1];
-                    Equi[parpas].protecao[0]=Equi[Vetordef[i]].protecao[0];
-                    Equi[parpas].protecao[1]=Equi[Vetordef[i]].protecao[1];
-                    Equi[parpas].protecao[2]=Equi[Vetordef[i]].protecao[2];
-                    Equi[parpas].taxadefalha=taxas_de_falha[2]/1000000000.0;
-                    Equi[parpas].tempodereparo=tempo_de_reparo[2];
-                    Equi[parpas].instalacao=tempo_de_inst[2];
-                    Equi[parpas].custoeq=preco[2];
-                    Equi[parpas].ConsumoEnergia=KWh[2];
-                    parpas++;
-                }
-            }
-        }
-    }
-    
-    
-    
-    double sumaux3=0;
-        double sumaux4=0;
-        for(int i=0;i<(n/2.0);i++){
-            for(int j=0;j<(n/2.0);j++){
-                sumaux3=sumaux3+(((n-2*i-1)/2)+((n-2*j-1)/2));
-            }
-        }
-        for(int i=0;i<(N/2.0);i++){
-            for(int j=0;j<(N/2.0);j++){
-                sumaux4=sumaux4+(((N-2*i-1)/2)+((N-2*j-1)/2));
-            }
-        }
-        double Custotfiber2=(4*sumaux3*l*N*N+4*sumaux4*L)*PkmVF;
-        //System.out.println(Custotfiber2);
-        
     //Taxa de Falha Geral
         double TXFG=0;
         for(int i=0;i<numtoteq;i++){
@@ -939,13 +492,8 @@ public class SimuladorTCO_fotoMod{
     //tempo e numero de iterações
         
     //numero de falhas de ONU , FDS e Olt Chassi em Ny
-        double TEFOnu=numEq[0]*((365*24*Ny)/(1000000000.0/taxas_de_falha[0]));
+        double TEFOnu=numEq[1]*((365*24*Ny)/(1000000000.0/taxas_de_falha[0]));
         //System.out.println("Onu"+TEFOnu);
-    //Custo
-        double CIPG=0;
-        for(int i=0;i<numtoteq;i++){
-            CIPG=CIPG+Equi[i].taxadefalha*Equi[i].custoeq*PorcRep;
-        }
         // Montecarlo e Resolução do Modelo de cutos de markov
         
         Random gerador = new Random();
@@ -1049,79 +597,40 @@ public class SimuladorTCO_fotoMod{
                     }
                     double[][] Matriz_Parametro= new double[9][4];
                     //System.out.println(Num_i);
-                    for(int j=0;j<Num_i;j++){
-                    Matriz_Parametro[0][j]=Equifal[j].clientes[0];
-                    Matriz_Parametro[1][j]=Equifal[j].clientes[1];
-                    Matriz_Parametro[2][j]=Equifal[j].tempodereparo;      
-                    Matriz_Parametro[3][j]=Equifal[j].distancia;
-                    Matriz_Parametro[4][j]=Equifal[j].protecao[0];
-                    Matriz_Parametro[5][j]=Equifal[j].protecao[1];
-                    Matriz_Parametro[6][j]=Equifal[j].protecao[2];
-                    Matriz_Parametro[7][j]=1.0;
-                    Matriz_Parametro[8][j]=Equifal[j].tipo;
-                    }
-                    double[] VetorcUSTO=new double[Num_i];
-                    for(int j=0;j<Num_i;j++){
-                    Matriz_Parametro[7][j]=0.0;    
-                    VetorcUSTO[j]=ObterCusto(numEq[0],Num_i,Matriz_Parametro,PorcentagemCom, CenarioMWCli, Cenaricli);
-                    
-                    Matriz_Parametro[7][j]=1.0;
-                    }
                     //System.out.println(Arrays.toString(VetorcUSTO));
-                    
-                    double CustoSLAini=VetorcUSTO[0];
+                    double[] VetorRep=new double[Num_i];
+                    for(int j=0;j<Num_i;j++){
+                        VetorRep[j]=Equifal[j].tempodereparo; 
+                    }
                     possel=0;
+                    double ini=0;
                     double sumtxfds=0;
                     for(int j=0;j<Num_i;j++){
                         sumtxfds=sumtxfds+Equi[posfalha[j]].taxadefalha;
-                        if(CustoSLAini<VetorcUSTO[j]){
-                        CustoSLAini=VetorcUSTO[j];
-                        possel=j;
+                        if(ini<VetorRep[j]){
+                            ini=VetorRep[j];
+                            possel=j;
                         }
-                    }
-                    
+                        }
                     Lambda=TXFG+(1/(Equi[posfalha[possel]].tempodereparo+(Equi[posfalha[possel]].distancia/vel)))-sumtxfds;
                     double Tempo=(1/Lambda);//*(Math.log(u));
                     //não generico
-                    double CustoSLA;
                     double CustoET;
-                    CustoSLA=ObterCusto(numEq[0],Num_i,Matriz_Parametro,PorcentagemCom, CenarioMWCli, Cenaricli);
-                    if(TypeMW==1){
-                    CustoAlugueletapa=ObterAluguel(numEq[0], Num_i, Matriz_Parametro, PorcentagemCom, CenarioMWCli, Cenaricli, Nummedclifal);
-                    }
+                    
                     int numfalha;
-                    
-                    
                     double Custoret=0;
                     Custoret=(Equi[posfalha[possel]].tempodereparo)*PorcRep;
                     CustoET=sal+Custoret;
                     ProdutoCEXT=CustoET*Tempo;
-                    ProdutoCSXT=CustoSLA*Tempo;
-                    Produtoaluguel=CustoAlugueletapa*Tempo;
                     for(int j=0;j<Num_i;j++){
                         if(Equi[j].ConsumoEnergia>0){
                             CustoEnergiadesp=CustoEnergiadesp+((Equi[j].ConsumoEnergia/1000.0)*PrKw*Tempo);
-                            if(Equi[j].tipo==14||Equi[j].tipo==15){
-                                CustoEnergiadespBack=CustoEnergiadespBack+((P_low/1000.0)*PrKw*Tempo);
-                                //Custoextaluguel=0;
-                            }
-                            if(Equi[j].tipo==12){
-                                int Numant;
-                                if(numEq[12]>0){
-                                    Numant=numEq[11];
-                                }else{
-                                    Numant=numEq[12];
-                                }
-                                CustoEnergiadespBack=CustoEnergiadespBack+(((P_high/1000.0)+Math.floor(Numant/16)*PSFP)*PrKw*Tempo);
-                            }
                         }
                     }
                 }
                 
                 //SomProd
-                SomProdS=SomProdS+ProdutoCSXT;
                 SomProdE=SomProdE+ProdutoCEXT;
-                SomaAluguel=SomaAluguel+Produtoaluguel;
                 //Seleciona novo estado
                 double seletor = gerador.nextDouble();
                 double seletorsum = seletor*Lambda;
@@ -1174,7 +683,7 @@ public class SimuladorTCO_fotoMod{
                 int Num_j=0;
                 numit++;
                 //System.out.println(Arrays.toString(Eq2));
-                if(Eq2[0]>=TEFOnu){
+                if(Eq2[2]>=TEFOnu){
                     FimWhile=1;
                 }
                 }
@@ -1193,189 +702,125 @@ public class SimuladorTCO_fotoMod{
                     Eq1[j]=Eq1[j]/Num_Tentativas;
                 }
         double medianumit=somanumit/Num_Tentativas;
-        double MediaCustoSLA;
-        double SomaSLA=0;
-        //System.out.println("custo aluguel"+custoaluguelexe);
-        
-        custoaluguelexe=custoaluguelexe/Num_Tentativas;
-        System.out.println("custo aluguel execd"+custoaluguelexe);
-        for(int i=0;i<Num_Tentativas;i++){
-            SomaSLA=SomaSLA+custoits[i];
-        }
-        MediaCustoSLA=SomaSLA/Num_Tentativas;
-        double MediaCustoEQT;
+        double CReparo;
         double SomaEQT=0;
         for(int i=0;i<Num_Tentativas;i++){
             SomaEQT=SomaEQT+custoite[i];
         }
-        MediaCustoEQT=SomaEQT/Num_Tentativas; 
-        double VarianciaCustoSLA;
-        double SomaVarianciaCustoSLA=0;
-        for(int i=0;i<Num_Tentativas;i++){
-            SomaVarianciaCustoSLA=SomaVarianciaCustoSLA+Math.pow((custoits[i]-MediaCustoSLA),2);
-        }
-        VarianciaCustoSLA=SomaVarianciaCustoSLA/Num_Tentativas;
-        double VarianciaCustoEQT;
-        double SomaVarianciaCustoEQT=0;
-        for(int i=0;i<Num_Tentativas;i++){
-            SomaVarianciaCustoEQT=SomaVarianciaCustoEQT+Math.pow((custoite[i]-MediaCustoEQT),2);
-        }
-        VarianciaCustoEQT=SomaVarianciaCustoEQT/Num_Tentativas;
-        double DesvioPSLA=Math.sqrt(VarianciaCustoSLA);
-        double DesvioPEQT=Math.sqrt(VarianciaCustoEQT);
+        //OPEX
         
-        CustoEnergiadesp=CustoEnergiadesp/Num_Tentativas;
-        CustoEnergiadespBack=CustoEnergiadespBack/Num_Tentativas;
+        //Reparo
+        CReparo=SomaEQT/Num_Tentativas;
+        
+        //Energia
+        double CEnergia=0;
+        for(int i=0;i<13;i++){
+                CEnergia=numEq[i]*(KWh[i]/1000.0)*(24-(5.2*typeSF)*365)*Ny * PrKw;
+        }
+        CEnergia=CEnergia-(CustoEnergiadesp/Num_Tentativas);
+        
         //System.out.println(Arrays.toString(custoits));
         //.println(Arrays.toString(Eq1));
+        
+        //Aluguel de espaco para as celulas
+        
+        
+        cAluguel=(numEq[0]+numEq[2]+numEq[10]) * prAluguel;
+        
+        //Custo com gerenciamento com 4 equipes compostas por 1 eng e 2 tec
+        cGerenc = 12.300*4*12 * Ny;
+        
+        
+        
         
         // CAPEX
         
         //Custo de Equipamentos
         double[] VetorCustoCapexEqui=new double[12];
-        VetorCustoCapexEqui[0]=numEq[0]*preco[0];
-        VetorCustoCapexEqui[1]=numEq[2]*preco[2];
-        VetorCustoCapexEqui[2]=numEq[3]*preco[4];
-        VetorCustoCapexEqui[3]=numEq[5]*preco[5];
-        VetorCustoCapexEqui[4]=numEq[6]*preco[6];
-        VetorCustoCapexEqui[5]=numEq[8]*preco[6];
-        VetorCustoCapexEqui[6]=numEq[10]*preco[7];
-        if(TypeMW>1){
-            VetorCustoCapexEqui[7]=numEq[11]*preco[8];
-            VetorCustoCapexEqui[8]=numEq[12]*preco[9];
-            VetorCustoCapexEqui[9]=numEq[13]*preco[10];
-            if(TypeMW>2){
-                VetorCustoCapexEqui[10]=numEq[15]*preco[11];
-            }
+        
+        for (int i=0;i<13;i++){
+        VetorCustoCapexEqui[i]=numEq[i]*preco[i];
         }
-        VetorCustoCapexEqui[11]=numEq[14]*preco[3];
         double CustoCompraEqui=0.0;
-        for(int i=0;i<12;i++){
+        for(int i=0;i<13;i++){
             CustoCompraEqui=CustoCompraEqui+VetorCustoCapexEqui[i];
         }
-        double Custototinst=0;
-        for(int i=0;i<numtoteq;i++){
-            if(Equi[i].protecao[0]==0||Equi[i].protecao[0]>6){
-                Custototinst=Custototinst+(Equi[i].instalacao+((Equi[i].distancia)/vel))*sal;
-                if((Equi[i].tipo>11)&&TypeMW==1){
-                Custototinst=Custototinst-(Equi[i].instalacao+((Equi[i].distancia)/vel))*sal;
-                }
-                if(Equi[i].tipo==12&&TypeMW==2){
-                Custototinst=Custototinst-(Equi[i].instalacao+((Equi[i].distancia)/vel))*sal;
-                }
-            }
+        // Custo de instalacao 
+        double custoTotInst=0;
+        
+        for (int i=0;i<13;i++){
+            custoTotInst = Equi[parpas].instalacao;
         }
-        //Custos de Fibra
-        double sumaux1=0;
-        double sumaux2=0;
-        for(int i=0;i<(n/2.0);i++){
-            for(int j=0;j<(n/2.0);j++){
-                sumaux1=sumaux1+(((n-2*i-1)/2)+((n-2*j-1)/2));
-            }
+        
+        //Custos de Fibra    
+        double cFibra = 0;
+        double distFiberSR8 = 268.71;
+        double distFiberSR16 = 280.74;
+        for (int i =0; i < DisestBdist.length; i++){
+        sumDisEst += DisestBdist[i];
         }
-        for(int i=0;i<(N/2.0);i++){
-            for(int j=0;j<(N/2.0);j++){
-                sumaux2=sumaux2+(((N-2*i-1)/2)+((N-2*j-1)/2));
-            }
+        
+        if (SR == 8){
+            cFibra = (sumDisEst * PkmVF) + (distFiberSR8 * PkmTF);
+        } else if (SR == 16){
+            cFibra = (sumDisEst * PkmVF) + (distFiberSR16 * PkmTF);
+        } else {
+            System.out.println("SR nao ajustado");
         }
-        double Custotfiber=(4*sumaux1*l*N*N+4*sumaux2*L)*PkmVF;
-        double Custottren=(((n*n-1)*l*N*N)+((N*N-1)*L))*PkmTF;
-        double CustoTfiberPFL=0;
-        double CustoTfiberPDL=0;
-        if(selENA==2){
-            CustoTfiberPFL=(N-1)*N*L*PkmTF;
-            Custotfiber=Custotfiber+((Math.pow((N/2.0),2)+0.5*N)+(Math.pow((N/2.0),2)-0.5*N))*N*L*(Math.ceil(((n*n)/(SR))))*PkmVF;
-        }
-        if(selEND==2){
-            CustoTfiberPDL=(n-1)*n*N*N*l*PkmTF;
-            Custotfiber=Custotfiber+((Math.pow((n/2.0),2)+0.5*n)+(Math.pow((n/2.0),2)-0.5*n))*n*l*N*N*PkmVF;
-            
-        }
-        //Custos de Aluguel de Esptrum
-        double Custo_aluguelEsp = 0;
-        if(TypeMW==2||TypeMW==3){
-            Custo_aluguelEsp=(numEq[11]+numEq[12])*2*PrSpleaYe*Ny;
-        }
-        double Custocapex=Custotfiber+Custottren+Custototinst+CustoCompraEqui+CustoTfiberPFL+CustoTfiberPDL+Custo_aluguelEsp;
-        //custos de Energia
-        for(int i=0;i<numtoteq;i++){
-            Custo_Energia=Custo_Energia+Equi[i].ConsumoEnergia;
-        }
-        //System.out.println(Custo_Energia/1000.0);
-        Custo_Energia=(Custo_Energia/1000.0)*Ny*365*24*PrKw;
-        if(Custo_Energia>0){
-            Custo_Energia=Custo_Energia-CustoEnergiadesp;
-        }
-        double CustoBack= ((numEq[11]+numEq[12])*(P_low/1000.0)+numEq[15]*(P_high/1000.0)+Math.floor((numEq[11]+numEq[12])/16)*PSFP)*Ny*365*24*PrKw;;
-        CustoBack=CustoBack-CustoEnergiadespBack;
-        if(TypeMW==3){
-            Custo_Energia=Custo_Energia+CustoBack;
-        }
-        //Custos de Aluguel Gb/s
-        double Custo_aluguel=0;
-        if(TypeMW==1){
-            Custo_aluguel=((Nummedclifal*100)/1024.0)*PrGbsh*24*365*Ny;
-            System.out.println("aluguel paad"+Custo_aluguel);
-            Custo_aluguel=custoaluguelexe+Custo_aluguel;
-        }
+        
         ///Resultado
-        String tiprot1="";
-        String tiprot2="";
+        String caract1="";
+        String caract2="";
         String tiprot3="";
         String tiprot4="";
         String tiprot5="";
         String timw="";
-        if(selCO==1){
-            tiprot1="OLT chassi+portas";
-        }else if(selCO==2){
-            tiprot1="OLT protegido";
+        switch (typePon){
+            case 0:
+                caract1 = "GPON";
+                break;
+            case 1:
+                caract1 = "10GPON";
+                break;
+            case 2:
+                caract1 = "40GPON";
+                break;
+            default:
+                
         }
-        if(selENA==1){
-            tiprot2="alimentação simples";
-        }else if(selCO==2){
-            tiprot2="alimentação dupla";
-        }
-        if(selRN==1){
-            tiprot3="splitter padrão";
-        }else if(selRN==2){
-            tiprot3="AWG";
-        }
-        if(selEND==1){
-            tiprot4="distribuição simples";
-        }else if(selEND==2){
-            tiprot4="distribuição dupla";
-        }
-        if(selRES==1){
-            tiprot5="ONU";
-        }else if(selRES==2){
-            tiprot5="ONU com MW";
-        }
-        if(TypeMW==0){
-            timw="Sem MW";
-        }else if(TypeMW==1){
-            timw="MW leasing";
-        }else if(TypeMW==2){
-            timw="MW upgrade";
-        }else if(TypeMW==3){
-            timw="MW propietario";
+        switch (SR){
+            case 8:
+                caract2 = "SR = 8";
+                break;
+            case 16:
+                caract2 = "SR = 16";
+                break;
+            case 32:
+                caract2 = "SR = 32";
+                break;
+            case 64:
+                caract2 = "SR = 64";
+                break;
+            default:
         }
         ///Resultado
-        System.out.println( tiprot1 +" , "+ tiprot2 +" , "+tiprot3 +" , "+tiprot4 +" , " +tiprot5 +" , " + timw + " : ");
-        System.out.println( "Custo de Penalidade:  " + MediaCustoSLA);
-        System.out.println( "Custo de Reparo:  " + MediaCustoEQT);
-        System.out.println( "Custo de Inst de Eq:  " + Custototinst);
-        System.out.println( "Custo de Compra de Eq:  " + CustoCompraEqui);
-        System.out.println( "Custos Relacionados a Fibra:  " + (Custocapex-CustoCompraEqui-Custototinst));
-        System.out.println( "Custo de Aluguel de Espectro:  " + Custo_aluguelEsp);
-        System.out.println( "Capex:  " + Custocapex);
-        System.out.println( "Custo de Aluguel:  " + Custo_aluguel);
-        System.out.println( "Custo de Energia:  " + Custo_Energia);
-        System.out.println( "Média de falhas de equipamentos:  "+"{Onu,FDS,Splitters,Olt ports,Rn_Chassi,FFS,Olt_Chassi,Olt_Switch,PFFS,Olt_Switch,PDFS,GES,Macro,Antena,Micro,Pico}");
+        //Ordem dos Resultados: CAPEX |Instalacao - Equipamento - Fibra (CAPEX)|  OPEX  | Reparo - Energia - Aluguel por m2 - Aluguel de Gerenciamento |
+        System.out.println( caract1 +" , "+ caract2 + " : \n");
+        System.out.println(CustoCompraEqui+custoTotInst+cFibra);                
+        System.out.println(CustoCompraEqui);
+        System.out.println(custoTotInst);
+        System.out.println(cFibra);
+        System.out.println(CEnergia+CReparo+cAluguel+cGerenc);
+        System.out.println(CReparo);
+        System.out.println(CEnergia);
+        System.out.println(cAluguel);
+        System.out.println(cGerenc);
+        System.out.println( "Média de falhas de equipamentos:  "+"{PICO, ONU, Painel ONU, Inversor ONU, Distribution Fiber Step, SPL, RN Chassi, Feeder Fiber Step, OLT, OltChassi, Painel OLT, Inversor OLT e Macro}");
         System.out.println( "Média de falhas de equipamentos:  " + Arrays.toString(Eq1));
         
 //escrever novo metodo de salvar
         
-        */
+        
   
 
         
@@ -2123,307 +1568,7 @@ public class SimuladorTCO_fotoMod{
         return Cenaricli;
         
     }
-    private double ObterAluguel(int numcli,int Num_i,double[][] Matriz_Parametro,double PorcentagemCom,int[][] CenarioMWCli,int[][]Cenaricli,int nummed){
-        int NF=0;
-        int[] VF=new int[numcli];
-        int[][] VFfin=new int[Num_i][numcli];
-        int[] VFred=new int[2];
-        int[] VFaux=new int[numcli];
-        int[] VPAred=new int[2];
-        int[] VPAaux=new int[numcli];
-        int[] VPA=new int[numcli];
-        int[] VPDred=new int[2];
-        int[] VPDaux=new int[numcli];
-        int[] VPD=new int[numcli];
-        int[] VPOLT=new int[numcli];
-        int[] VPOLTaux=new int[numcli];
-        int[] VPOLTaux2=new int[numcli];
-        //especificação da proteção
-        for(int i=0;i<Num_i;i++){
-            if(TypeMW==1){
-                if((Matriz_Parametro[4][i]==2)||(Matriz_Parametro[4][i]==3)){
-                    VPAred[0]=(int) Matriz_Parametro[5][i];
-                    VPAred[1]=(int) Matriz_Parametro[6][i];       
-                    VPAaux=ObterVetorCompleto(VPAred);
-                    if(Matriz_Parametro[4][i]==2){
-                        VPAaux=ObterVetorPrt2(numcli,VPAaux);
-                    }else if(Matriz_Parametro[4][i]==3){
-                        VPAaux=ObterVetorPrt(numcli,VPAaux);
-                    }
-                    for(int j=0;j<numcli;j++){
-                        if((VPA[j]+VPAaux[j])>0){
-                            VPA[j]=1;
-                        }
-                    }
-                    VPAaux=new int[numcli];
-                }else if((Matriz_Parametro[4][i]==5)||(Matriz_Parametro[4][i]==6)){
-                    VPDred[0]=(int) Matriz_Parametro[5][i];
-                    VPDred[1]=(int) Matriz_Parametro[6][i];       
-                    VPDaux=ObterVetorCompleto(VPDred);
-                    if(Matriz_Parametro[4][i]==5){
-                        VPDaux=ObterVetorPrt2(numcli,VPDaux);
-                    }else if(Matriz_Parametro[4][i]==6){
-                        VPDaux=ObterVetorPrt(numcli,VPDaux);
-                    }
-                    for(int j=0;j<numcli;j++){
-                        if((VPD[j]+VPDaux[j])>0){
-                            VPD[j]=1;
-                        }
-                    }
-                    VPDaux=new int[numcli];
-                }else if(Matriz_Parametro[4][i]==8){
-                    int [] MP={0,0};
-                    MP[0]=(int) Matriz_Parametro[5][i];
-                    MP[1]=(int) Matriz_Parametro[6][i];
-                    VPOLTaux=ObterVetorCompleto(MP);
-                    for(int j=0;j<numcli;j++){
-                        if((VPOLT[j]+VPOLTaux[j])>0){
-                            VPOLT[j]=1;
-                        }
-                    }
-
-                }
-            }
-        }
-	//daqui começa
-	for(int i=0;i<Num_i;i++){
-            if(TypeMW==1){
-		VFred[0]=(int) Matriz_Parametro[0][i];
-		VFred[1]=(int) Matriz_Parametro[1][i];       
-		VFaux=ObterVetorCompleto(VFred);
-		int a=(int) Matriz_Parametro[8][i];
-		if(a==0||a==1||a==2||a==3||a==4||a==5||a==6||a==7||a==9||a==11||a==16||a==17){
-			for(int j=0;j<numcli;j++){
-                	    VFfin[i][j]=VFaux[j];
-               		}
-		}
-		if((a==3||a==6||a==17)&&selCO==2){
-                        if(VFred[0]==0&&VFred[0]==0){
-                            for(int j=0;j<numcli;j++){
-                                VFfin[i][j]=0;
-                            }
-			}else{
-                            for(int j=0;j<numcli;j++){
-                                    if((VFfin[i][j]+VPOLT[j])==2){
-                                            VFfin[i][j]=1;
-                                    }else{
-                                    VFfin[i][j]=0;
-                                }
-                            }	
-                    }
-                }
-		if((a==5)&&selENA==2){
-			for(int j=0;j<numcli;j++){
-                		if((VFfin[i][j]+VPA[j])==2){
-					VFfin[i][j]=1;
-				}else{
-                                    VFfin[i][j]=0;
-                                }
-               		}	
-		}
-		if((a==1)&&selEND==2){
-                    System.out.println(Arrays.toString(VPD));
-			for(int j=0;j<numcli;j++){
-                		if((VFfin[i][j]+VPD[j])==2){
-					VFfin[i][j]=1;
-				}else{
-                                    VFfin[i][j]=0;
-                                }
-               		}	
-		}
-            }
-	}
-	for(int i=0;i<Num_i;i++){
-		for(int j=0;j<numcli;j++){
-            		VF[j]=VF[j]+VFfin[i][j];
-			if(VF[j]>1){
-				VF[j]=1;	
-			}
-            	}
-        }
-	for(int i=0;i<numcli;i++){
-            if(VF[i]==1){
-                NF++;
-            }
-        }
-        int NumExe=NF-nummed;
-        double Custo_aluguel=0;
-        if(NF>nummed){
-            Custo_aluguel=Math.pow((NF-nummed),paraluext)*PrGbsh;
-            //Custo_aluguel=(((NF-nummed)*100)/1024)*PrGbsh*((228*Math.exp(0.001*(NF-nummed)))-220);
-            //System.out.println("custo exp:  "+Custo_aluguel);
-            //System.out.println("custo lin:  "+((((NF-nummed)*100)/1024)*PrGbsh*(NF-nummed)));
-        }
-        //System.out.println("custo tot:  "+Custo_aluguel);
-        return Custo_aluguel;
-    }
-    private double ObterCusto(int numcli,int Num_i,double[][] Matriz_Parametro,double PorcentagemCom,int[][] CenarioMWCli,int[][]Cenaricli){
-        int NF=0;
-        int[] VF=new int[numcli];
-        int[][] VFfin=new int[Num_i][numcli];
-        int[] VFred=new int[2];
-        int[] VFaux=new int[numcli];
-        int[] VPAred=new int[2];
-        int[] VPAaux=new int[numcli];
-        int[] VPA=new int[numcli];
-        int[] VPDred=new int[2];
-        int[] VPDaux=new int[numcli];
-        int[] VPD=new int[numcli];
-        int[] VPMW=new int[numcli];
-        int[] VPMWaux=new int[numcli];
-        int[] VPOLT=new int[numcli];
-        int[] VPOLTaux=new int[numcli];
-        int[] VPOLTaux2=new int[numcli];
-        //especificação da proteção
-        for(int i=0;i<Num_i;i++){
-            if(Matriz_Parametro[7][i]==1.0){
-                if((Matriz_Parametro[4][i]==2)||(Matriz_Parametro[4][i]==3)){
-                    VPAred[0]=(int) Matriz_Parametro[5][i];
-                    VPAred[1]=(int) Matriz_Parametro[6][i];     
-                    VPAaux=ObterVetorCompleto(VPAred);
-                    if(Matriz_Parametro[4][i]==2){
-                        VPAaux=ObterVetorPrt2(numcli,VPAaux);
-                    }else if(Matriz_Parametro[4][i]==3){
-                        VPAaux=ObterVetorPrt(numcli,VPAaux);
-                    }
-                    for(int j=0;j<numcli;j++){
-                        if((VPA[j]+VPAaux[j])>0){
-                            VPA[j]=1;
-                        }
-                    }
-                    VPAaux=new int[numcli];
-                }else if((Matriz_Parametro[4][i]==5)||(Matriz_Parametro[4][i]==6)){
-                    VPDred[0]=(int) Matriz_Parametro[5][i];
-                    VPDred[1]=(int) Matriz_Parametro[6][i];       
-                    VPDaux=ObterVetorCompleto(VPDred);
-                    if(Matriz_Parametro[4][i]==5){
-                        VPDaux=ObterVetorPrt2(numcli,VPDaux);
-                    }else if(Matriz_Parametro[4][i]==6){
-                        VPDaux=ObterVetorPrt(numcli,VPDaux);
-                    }
-                    for(int j=0;j<numcli;j++){
-                        if((VPD[j]+VPDaux[j])>0){
-                            VPD[j]=1;
-                        }
-                    }
-                    VPDaux=new int[numcli];
-                }else if((Matriz_Parametro[4][i]==7)&&(TypeMW>1)){
-                    if(Matriz_Parametro[8][i]==12){
-                        for(int j=0;j<numcli;j++){
-                            VPMWaux[j]=1;
-                        }
-                    }else{
-                        int MP1=(int) Matriz_Parametro[5][i];
-                        int MP2=(int) Matriz_Parametro[6][i];
-                        for(int t=MP1;t<=MP2;t++){
-                            for(int j=0;j<n*N;j++){
-                                for(int k=0;k<n*N;k++){
-                                    if((CenarioMWCli[j][k]>=Matriz_Parametro[5][i])&&(CenarioMWCli[j][k]<=Matriz_Parametro[6][i])){
-                                        VPMWaux[Cenaricli[j][k]]=1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    for(int j=0;j<numcli;j++){
-                        if((VPMW[j]+VPMWaux[j])>0){
-                            VPMW[j]=1;
-                        }
-                    }
-                }else if(Matriz_Parametro[4][i]==8){
-                    int [] MP={0,0};
-                    MP[0]=(int) Matriz_Parametro[5][i];
-                    MP[1]=(int) Matriz_Parametro[6][i];
-                    VPOLTaux=ObterVetorCompleto(MP);
-                    for(int j=0;j<numcli;j++){
-                        if((VPOLT[j]+VPOLTaux[j])>0){
-                            VPOLT[j]=1;
-                        }
-                    }
-
-                }
-            }
-        }
-	//daqui começa
-	for(int i=0;i<Num_i;i++){
-            if(Matriz_Parametro[7][i]==1.0){
-		VFred[0]=(int) Matriz_Parametro[0][i];
-		VFred[1]=(int) Matriz_Parametro[1][i];       
-		VFaux=ObterVetorCompleto(VFred);
-		int a=(int) Matriz_Parametro[8][i];
-		if(a==0||a==1||a==2||a==3||a==4||a==5||a==6||a==7||a==9||a==11||a==16||a==17){
-			for(int j=0;j<numcli;j++){
-                	    VFfin[i][j]=VFaux[j];
-               		}
-		}
-		if((a==3||a==6||a==17)&&selCO==2){
-                        if(VFred[0]==0&&VFred[0]==0){
-                            for(int j=0;j<numcli;j++){
-                                VFfin[i][j]=0;
-                            }
-			}else{
-                            for(int j=0;j<numcli;j++){
-                                    if((VFfin[i][j]+VPOLT[j])==2){
-                                            VFfin[i][j]=1;
-                                    }else{
-                                    VFfin[i][j]=0;
-                                }
-                            }	
-                    }
-                }
-		if((a==5)&&selENA==2){
-			for(int j=0;j<numcli;j++){
-                		if((VFfin[i][j]+VPA[j])==2){
-					VFfin[i][j]=1;
-				}else{
-                                    VFfin[i][j]=0;
-                                }
-               		}	
-		}
-		if((a==1)&&selEND==2){
-                    //System.out.println(Arrays.toString(VPD));
-			for(int j=0;j<numcli;j++){
-                		if((VFfin[i][j]+VPD[j])==2){
-					VFfin[i][j]=1;
-				}else{
-                                    VFfin[i][j]=0;
-                                }
-               		}	
-		}
-		if((a!=0)&&(TypeMW>0)){
-			for(int j=0;j<numcli;j++){
-                		if((VFfin[i][j]+VPMW[j])==2){
-                                    VFfin[i][j]=1;
-				}else{
-                                    VFfin[i][j]=0;
-                                }
-               		}	
-		}
-            }
-	}
-        double NFC=0;
-        double NFR=0;
-        double CustoSLA=0;
-	for(int i=0;i<Num_i;i++){
-		for(int j=0;j<numcli;j++){
-            		VF[j]=VF[j]+VFfin[i][j];
-			if(VF[j]>1){
-				VF[j]=1;	
-			}
-            	}
-        }
-	for(int i=0;i<numcli;i++){
-            if(VF[i]==1){
-                NF++;
-            }
-        }
-        //System.out.println("NF: "+NF);
-        NFC=NF*PorcentagemCom;
-        NFR=NF-NFC;
-        CustoSLA=Math.pow(NFC,alpha)*SLAC+Math.pow(NFR,alpha)*SLAR;
-        //tem.out.println("custo tot:  "+CustoSLA);
-        return CustoSLA;
-    }
+    
     private int[][] Hexagono(double raio){
         double EstBdis,EstBdismeioL,aux1,aux2=l+1;
         double NumeroEsp=0;
@@ -2497,7 +1642,7 @@ public class SimuladorTCO_fotoMod{
                 aux_for= 0;
             }
         }
-        /*
+        
         //Para debug
         int [] vetorDeImpressao = new int[cobertura[0].length];
         for (int i=0; i<cobertura.length;i++){
@@ -2506,7 +1651,7 @@ public class SimuladorTCO_fotoMod{
         }
         System.out.println(Arrays.toString(vetorDeImpressao));
     }
-        */
+        
         int teste = contaCelulas(cobertura);
         
         int [][]matrizDeCobertura = matrizDePosicoes(cobertura, teste, SR);
@@ -2673,6 +1818,9 @@ public class SimuladorTCO_fotoMod{
         int hor = 0;
         int vert = 0;
         switch (SR){
+            case 8:
+                hor = 2;
+                vert = 4;
             case 16:
                 hor = 4;
                 vert = 4;
@@ -2748,7 +1896,7 @@ public class SimuladorTCO_fotoMod{
             }
         }
         
-        matSimplificada = MatSimplificada(matSimplificada, SR);
+        matSimplificada = MatSimplificada(matSimplificada);
         
         int cont2=0;
         for(int i=0;i<matSimplificada.length;i++){
@@ -2760,10 +1908,10 @@ public class SimuladorTCO_fotoMod{
             }
         }
         
-        int [] vetorDeImpressao2 = new int[matDePos[0].length];
-        for (int i=0; i<matDePos.length;i++){
-            for (int j=0; j<matDePos[0].length; j++){
-            vetorDeImpressao2[j] = matDePos [i][j];
+        int [] vetorDeImpressao2 = new int[matSimplificada[0].length];
+        for (int i=0; i<matSimplificada.length;i++){
+            for (int j=0; j<matSimplificada[0].length; j++){
+            vetorDeImpressao2[j] = matSimplificada [i][j];
             }
         System.out.println(Arrays.toString(vetorDeImpressao2));
         }
@@ -2772,7 +1920,7 @@ public class SimuladorTCO_fotoMod{
         return matDePos;
     }
      
-    private int[][] MatSimplificada (int[][] matSimplificada,int SR){
+    private int[][] MatSimplificada (int[][] matSimplificada){
         int delN = 16,  delH, delV, vIndex = 1, vIndexReset=1, auxH=0;
         if (SR ==16){
         delH=4;
@@ -2780,9 +1928,15 @@ public class SimuladorTCO_fotoMod{
         } else if(SR==32){
         delH=4;
         delV=8;
-        } else {
+        } else if (SR ==64){
         delH=8;
         delV=8;
+        } else if (SR == 8){
+        delH=2;
+        delV=4;
+        } else {
+        delH=0;
+        delV=0;
         }
         for (int i = 0; i<matSimplificada.length;i++){
             for (int j = 0; j<matSimplificada[0].length; j++){
