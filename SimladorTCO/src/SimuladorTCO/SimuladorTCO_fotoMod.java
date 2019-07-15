@@ -37,26 +37,26 @@ public class SimuladorTCO_fotoMod{
     int NPC=72;  //numero de portas olt por chassi botar 72
    //subtituir e arqpad esqprot
    //seletores
-    int typePon = 0;
+    int typePon = 2;
     // 0 GPON
     // 1 10GPON
     // 2 40GPON
-    int typeSF = 1;
+    int typeSF = 0;
     // 0 sem painel
     // 1 com painel
     //Parametros Monte Carlo
     //int numittt=200;
-    int Ny=5;
+    int Ny=1;
     int Num_Tentativas=1000;
     double PorcRep=0.3; //reparo
     //Dados de Equipamentos
     // {onu,fiber,splitter,olt port,Rn chassi,Olt Chassi,switches,GES,Micro,Pico,Antena,macro}
     //PICO, ONU, Painel ONU, Inversor ONU, Distribution Fiber Step, SPL, RN Chassi, Feeder Fiber Step, OLT, OltChassi, Painel OLT, Inversor OLT e Macro
-    double[] taxas_de_falha={2000,256,191,345,2381,120,50,500,2381,1075,667,191,381,2000}; //(fit)
+    double[] taxas_de_falha={256,256,191,345,2381,50,500,2381,1075,667,191,381,2000}; //(fit)
     double[] tempo_de_reparo={6,4,6,6,22,4.25,4.25,22,2,2,6,6,8}; //(h)
     double[] tempo_de_inst={1,1,2.45,1.3,0,0.17,0.17,0,0.17,0.5,2.45,1.3,24}; //(h)
-    double[] preco={0,0,379,600,0,SR*3.75,400,0,0,2700,379,20246,0}; //($)
-    double[] KWh={70,0,0,0,0,0,0,0,0,0,0,800}; //(W)
+    double[] preco={0,0,379+199.75,600+300,0,SR*3.75,400,0,0,2700,379+199.75,20246+300,0}; //($)
+    double[] KWh={70,0,0,0,0,0,0,0,0,0,0,0,800}; //(W)
     double[] areacobertura={0.25,0.1};//{micro,pico}//até 0.25
     double PkmVF=700; //instalar
     double PkmTF=57000; //trenching
@@ -108,36 +108,7 @@ public class SimuladorTCO_fotoMod{
     int [][] Resposta = Hexagono (areacobertura[1]);
     numEq[0] = Resposta.length;
     numEq[1] = Resposta.length;
-    numEq[2] = 0;
-    if (typeSF ==1){
-        switch(typePon){
-            case 0:
-                if(SR ==8){
-                numEq[2] = 76;
-                }else {
-                numEq[2] = 44;
-                }
-                break;
-            case 1:
-                if(SR ==8){
-                numEq[2] = 162;
-                }else {
-                numEq[2] = 89;
-                }
-                break;
-            case 2:
-                if(SR ==8){
-                numEq[2] = 647;
-                }else {
-                numEq[2] = 360;
-                }
-                break;
-            default:
-                System.out.println("SR invalido");
-        }
-    } else {
-    numEq[2] = 0;
-    }
+    numEq[2] = 2*Resposta.length;
     if (typeSF==1){
     numEq[3] = Resposta.length;
     } else {
@@ -222,21 +193,22 @@ public class SimuladorTCO_fotoMod{
     int [][] posSPL = new int [Resposta[Resposta.length-1][2]][2];
     
     for (int i=0;i<Resposta.length;i++){
-        respostaSPL[i][1] = Resposta[i][2];
-        respostaSPL[i][2] = Math.sqrt((Resposta[i][0]-pc)*(Resposta[i][0]-pc)
+        respostaSPL[i][0] = Resposta[i][2];
+        respostaSPL[i][1] = Math.sqrt((Resposta[i][0]-pc)*(Resposta[i][0]-pc)
                 +(Resposta[i][1]-pc)*(Resposta[i][1]-pc));
     }
     for (int i=0;i<auxResposta.length;i++){
         auxResposta[i] = Integer.MAX_VALUE;
     }
+    respostaSPL = sortArrayEspecial(respostaSPL);
     for(int i=0;i<respostaSPL.length;i++){
-        if(auxAtual != respostaSPL[i][1]){
+        if(auxAtual != respostaSPL[i][0]){
             auxAtual++;
         }
         if(respostaSPL[i][0]<auxResposta[auxAtual-1]){
             posSPL[auxAtual-1][0] = Resposta[i][0];
             posSPL[auxAtual-1][1] = Resposta[i][1];
-            auxResposta[auxAtual-1]=respostaSPL[i][0];
+            auxResposta[auxAtual-1]=respostaSPL[i][1];
         }
     }
     auxAtual=1;
@@ -245,7 +217,7 @@ public class SimuladorTCO_fotoMod{
     double [] DisestBdist= new double[Resposta.length];
     double [] DisSPL= new double[Resposta[Resposta.length-1][2]];
     for (int i=0;i<Resposta.length;i++){
-        if(auxAtual != respostaSPL[i][1]){
+        if(auxAtual != respostaSPL[i][0]){
             auxAtual++;
         }
         DisestBdist[i]=Math.sqrt(Math.pow((Resposta[i][0]-posSPL[auxAtual-1][0]),2)+Math.pow((Resposta[i][1]-posSPL[auxAtual-1][1]),2));
@@ -709,15 +681,17 @@ public class SimuladorTCO_fotoMod{
         }
         //OPEX
         
+        //
+        
         //Reparo
         CReparo=SomaEQT/Num_Tentativas;
         
         //Energia
         double CEnergia=0;
         for(int i=0;i<13;i++){
-                CEnergia=numEq[i]*(KWh[i]/1000.0)*(24-(5.2*typeSF)*365)*Ny * PrKw;
+                CEnergia=CEnergia+numEq[i]*(KWh[i]/1000.0)*((24-(5.2*typeSF))*365)*Ny * PrKw;
         }
-        CEnergia=CEnergia-(CustoEnergiadesp/Num_Tentativas);
+        CEnergia=CEnergia;//-(CustoEnergiadesp/Num_Tentativas);
         
         //System.out.println(Arrays.toString(custoits));
         //.println(Arrays.toString(Eq1));
@@ -728,7 +702,7 @@ public class SimuladorTCO_fotoMod{
         cAluguel=(numEq[0]+numEq[2]+numEq[10]) * prAluguel;
         
         //Custo com gerenciamento com 4 equipes compostas por 1 eng e 2 tec
-        cGerenc = 12.300*4*12 * Ny;
+        cGerenc = (2000*4+8300)*12 * Ny;
         
         
         
@@ -736,7 +710,7 @@ public class SimuladorTCO_fotoMod{
         // CAPEX
         
         //Custo de Equipamentos
-        double[] VetorCustoCapexEqui=new double[12];
+        double[] VetorCustoCapexEqui=new double[13];
         
         for (int i=0;i<13;i++){
         VetorCustoCapexEqui[i]=numEq[i]*preco[i];
@@ -748,8 +722,8 @@ public class SimuladorTCO_fotoMod{
         // Custo de instalacao 
         double custoTotInst=0;
         
-        for (int i=0;i<13;i++){
-            custoTotInst = Equi[parpas].instalacao;
+        for (int i=0;i<parpas;i++){
+            custoTotInst += Equi[i].instalacao*sal;
         }
         
         //Custos de Fibra    
@@ -1604,11 +1578,13 @@ public class SimuladorTCO_fotoMod{
         if(iniFiNCent != -1) {
             nCentral = construirFileira (NumeroEsp_Ml,iniFiNCent);
         }
+        /*
         System.out.println("Verifica Funcao");
         System.out.println(Arrays.toString(nCentral));
         System.out.println("Verifica Funcao2");
         System.out.println(Arrays.toString(central));
         System.out.println("Verifica Matriz");
+        */
         int [][] cobertura= new int [n*N][n*N];
         int aux_for=0;
         int aux2_for=((n*N)/2)-1;
@@ -1644,13 +1620,13 @@ public class SimuladorTCO_fotoMod{
         }
         
         //Para debug
-        int [] vetorDeImpressao = new int[cobertura[0].length];
-        for (int i=0; i<cobertura.length;i++){
-            for (int j=0; j<cobertura[0].length; j++){
-            vetorDeImpressao[j] = cobertura [i][j];
-        }
-        System.out.println(Arrays.toString(vetorDeImpressao));
-    }
+        //int [] vetorDeImpressao = new int[cobertura[0].length];
+        //for (int i=0; i<cobertura.length;i++){
+        //    for (int j=0; j<cobertura[0].length; j++){
+        //    vetorDeImpressao[j] = cobertura [i][j];
+        //}
+        //System.out.println(Arrays.toString(vetorDeImpressao));
+        //}
         
         int teste = contaCelulas(cobertura);
         
@@ -1907,7 +1883,7 @@ public class SimuladorTCO_fotoMod{
                 }
             }
         }
-        
+        /*
         int [] vetorDeImpressao2 = new int[matSimplificada[0].length];
         for (int i=0; i<matSimplificada.length;i++){
             for (int j=0; j<matSimplificada[0].length; j++){
@@ -1916,7 +1892,7 @@ public class SimuladorTCO_fotoMod{
         System.out.println(Arrays.toString(vetorDeImpressao2));
         }
         System.out.println("termina aqui2");
-        
+        */
         return matDePos;
     }
      
@@ -1958,6 +1934,27 @@ public class SimuladorTCO_fotoMod{
             }
         }
         return matSimplificada;
+    }
+    
+    public static double[][] sortArrayEspecial (double[][] nonSortedArray) {
+        double[][] sortedArray = new double[nonSortedArray.length][nonSortedArray[0].length];
+        double temp,temp2;
+        for (int j = 0; j < nonSortedArray.length - 1; j++) {// added this for loop, think about logic why do we have to add this to make it work
+
+        for (int i = 0; i < nonSortedArray.length - 1; i++) {
+            if (nonSortedArray[i][0] > nonSortedArray[i + 1][0]) {
+                temp = nonSortedArray[i][0];
+                temp2 = nonSortedArray[i][1];
+                nonSortedArray[i][0] = nonSortedArray[i + 1][0];
+                nonSortedArray[i + 1][0] = temp;
+                nonSortedArray[i][1] = nonSortedArray[i + 1][1];
+                nonSortedArray[i + 1][1] = temp2;
+                sortedArray = nonSortedArray;
+
+            }
+        }
+        }
+        return sortedArray;
     }
 }
 
